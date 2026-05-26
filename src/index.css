@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+body {
+  font-family: 'Heebo', system-ui, sans-serif;
+  background:
+    radial-gradient(900px 600px at 92% -10%, oklch(0.32 0.12 24 / 0.18), transparent 60%),
+    radial-gradient(700px 500px at -10% 110%, oklch(0.4 0.05 240 / 0.10), transparent 60%),
+    oklch(0.14 0.012 260);
+  color: oklch(0.95 0.005 250);
+  -webkit-font-smoothing: antialiased;
+}
+
+* { box-sizing: border-box; }
+
+@layer components {
+  .glass {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl;
+  }
+  .glass-2 {
+    @apply bg-white/[0.02] border border-white/5 rounded-xl;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all duration-200 select-none;
+  }
+  .btn-primary {
+    @apply btn bg-forti-red text-white hover:brightness-110 active:brightness-95;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent border border-white/10 text-forti-ink hover:bg-white/5 hover:border-white/20;
+  }
+  .btn-accent {
+    @apply btn bg-forti-accent text-black hover:brightness-110;
+  }
+  .input {
+    @apply w-full bg-transparent border border-white/10 rounded-xl px-4 py-3 text-forti-ink placeholder:text-forti-mute/60
+           focus:outline-none focus:border-forti-red/60 focus:bg-white/[0.02] transition;
+  }
+  .label { @apply block mb-2 text-xs uppercase tracking-wider text-forti-mute font-semibold; }
+  .chip {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border border-white/10 bg-white/[0.03];
+  }
+  .card-title { @apply text-lg font-bold text-forti-ink; }
+  .stat-card { @apply glass p-5 hover:border-white/15 transition; }
+  .table-row { @apply border-b border-white/5 hover:bg-white/[0.02] transition; }
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
+
+/* hide number input arrows */
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
