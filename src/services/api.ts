@@ -1,97 +1,104 @@
-import { mockParticipants, mockWinners, mockSmsHistory, defaultSettings } from '../data/mock';
 import type { Participant, Winner, SmsMessage, RaffleSettings } from '../types';
 
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// ---------------------------------------------------------------------------
+// HTTP client
+// ---------------------------------------------------------------------------
+const BASE = '/api';
 
-let participants = [...mockParticipants];
-let winners = [...mockWinners];
-let smsHistory = [...mockSmsHistory];
-let settings = { ...defaultSettings };
+function getToken(): string | null {
+  return localStorage.getItem('auth');
+}
 
+function buildHeaders(): Record<string, string> {
+  const h: Record<string, string> = { 'Content-Type': 'application/json' };
+  const token = getToken();
+  if (token && token !== '1') h['Authorization'] = `Bearer ${token}`;
+  return h;
+}
+
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method,
+    headers: buildHeaders(),
+    body: body != null ? JSON.stringify(body) : undefined,
+  });
+
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try {
+      const j = await res.json();
+      if (j?.error) msg = j.error;
+    } catch { /* ignore */ }
+    throw new Error(msg);
+  }
+
+  return res.json() as Promise<T>;
+}
+
+// ---------------------------------------------------------------------------
+// Auth
+// ---------------------------------------------------------------------------
+export const authApi = {
+  async login(email: string, password: string): Promise<{ token: string; user: { email: string } }> {
+    return request('POST', '/auth/login', { email, password });
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Main API (matches previous mock interface exactly)
+// ---------------------------------------------------------------------------
 export const api = {
-  async registerParticipant(input: Omit<Participant, 'id' | 'ticketId' | 'registeredAt' | 'smsStatus' | 'raffleStatus'>): Promise<Participant> {
-    await delay(600);
-    const id = `p_${participants.length + 1}`;
-    const ticketId = `FT-${String(1000 + participants.length)}`;
-    const p: Participant = {
-      ...input,
-      id,
-      ticketId,
-      registeredAt: new Date().toISOString(),
-      smsStatus: 'ממתין',
-      raffleStatus: 'פעיל',
-    };
-    participants.push(p);
-    return p;
+  // ── Participants ────────────────────────────────────────────────────────
+  async registerParticipant(
+    input: Omit<Participant, 'id' | 'ticketId' | 'registeredAt' | 'smsStatus' | 'raffleStatus'>,
+  ): Promise<Participant> {
+    return request('POST', '/participants', input);
   },
+
   async listParticipants(): Promise<Participant[]> {
-    await delay(200);
-    return [...participants];
+    return request('GET', '/participants');
   },
-  async deleteParticipant(id: string) {
-    await delay(200);
-    participants = participants.filter((p) => p.id !== id);
+
+  async deleteParticipant(id: string): Promise<void> {
+    return request('DELETE', `/participants/${id}`);
   },
-  async markInvalid(id: string) {
-    await delay(150);
-    participants = participants.map((p) => (p.id === id ? { ...p, raffleStatus: 'לא תקין' as const } : p));
+
+  async markInvalid(id: string): Promise<void> {
+    return request('PATCH', `/participants/${id}/invalid`);
   },
+
   async eligibleForDraw(): Promise<Participant[]> {
-    await delay(150);
-    return participants.filter((p) => p.raffleStatus === 'פעיל');
+    return request('GET', '/participants/eligible');
   },
+
+  // ── Winners ─────────────────────────────────────────────────────────────
   async confirmWinner(participantId: string): Promise<Winner> {
-    await delay(200);
-    const p = participants.find((x) => x.id === participantId)!;
-    const w: Winner = {
-      id: `w_${winners.length + 1}`,
-      participantId,
-      fullName: p.fullName,
-      company: p.company,
-      phone: p.phone,
-      email: p.email,
-      wonAt: new Date().toISOString(),
-      confirmed: true,
-      smsSent: false,
-      contacted: false,
-      prizeDelivered: false,
-    };
-    winners.push(w);
-    participants = participants.map((x) => (x.id === participantId ? { ...x, raffleStatus: 'זכה' } : x));
-    return w;
+    return request('POST', '/winners', { participantId });
   },
+
   async listWinners(): Promise<Winner[]> {
-    await delay(150);
-    return [...winners];
+    return request('GET', '/winners');
   },
-  async updateWinner(id: string, patch: Partial<Winner>) {
-    await delay(150);
-    winners = winners.map((w) => (w.id === id ? { ...w, ...patch } : w));
+
+  async updateWinner(id: string, patch: Partial<Winner>): Promise<void> {
+    return request('PATCH', `/winners/${id}`, patch);
   },
+
+  // ── SMS ─────────────────────────────────────────────────────────────────
   async sendSms(content: string, audience: string, recipientsCount: number): Promise<SmsMessage> {
-    await delay(500);
-    const msg: SmsMessage = {
-      id: `s_${smsHistory.length + 1}`,
-      audience,
-      content,
-      recipientsCount,
-      sentAt: new Date().toISOString(),
-      status: 'נשלח',
-    };
-    smsHistory.unshift(msg);
-    return msg;
+    return request('POST', '/sms', { content, audience, recipientsCount });
   },
+
   async listSms(): Promise<SmsMessage[]> {
-    await delay(150);
-    return [...smsHistory];
+    return request('GET', '/sms');
   },
+
+  // ── Settings ────────────────────────────────────────────────────────────
   async getSettings(): Promise<RaffleSettings> {
-    await delay(100);
-    return { ...settings };
+    return request('GET', '/settings');
   },
+
   async updateSettings(patch: Partial<RaffleSettings>): Promise<RaffleSettings> {
-    await delay(200);
-    settings = { ...settings, ...patch };
-    return { ...settings };
+    return request('PUT', '/settings', patch);
   },
 };

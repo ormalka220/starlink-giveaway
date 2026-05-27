@@ -7,3 +7,17 @@ tsconfig.tsbuildinfo
 .claude
 .agents
 .venv-img
+
+# Backend
+backend/node_modules
+backend/dist
+
+# Local database (keep data private)
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Environment
+.env
+backend/.env
