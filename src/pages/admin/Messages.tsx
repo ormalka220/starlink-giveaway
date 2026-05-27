@@ -26,9 +26,9 @@ export default function Messages() {
     setSending(true);
     const finalAudience = tab === 'הודעה אישית' ? phone : audience;
     const finalCount = test ? 1 : tab === 'הודעה אישית' ? 1 : recipients;
-    await api.sendSms(content, finalAudience, finalCount);
+    await api.sendSms(content, finalAudience, finalCount, test);
     setSending(false);
-    push(test ? 'הודעת בדיקה נשלחה' : `ההודעה נשלחה ל-${finalCount} נמענים`);
+    push(test ? '✅ הודעת בדיקה נשלחה (ללא חיוב קרדיטים)' : `✅ ההודעה נשלחה ל-${finalCount} נמענים`);
     api.listSms().then(setHistory);
   }
 

@@ -101,8 +101,8 @@ export const api = {
   },
 
   // ── SMS ─────────────────────────────────────────────────────────────────
-  async sendSms(content: string, audience: string, recipientsCount: number): Promise<SmsMessage> {
-    return request('POST', '/sms', { content, audience, recipientsCount });
+  async sendSms(content: string, audience: string, recipientsCount: number, test = false): Promise<SmsMessage> {
+    return request('POST', '/sms', { content, audience, recipientsCount, test });
   },
 
   async listSms(): Promise<SmsMessage[]> {
