@@ -1,20 +1,28 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BrandMark } from '../components/Brand';
+import { authApi } from '../services/api';
 
 export default function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('admin@spotnet.co.il');
+  const [email, setEmail]       = useState('admin@spotnet.co.il');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState('');
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError('');
     setLoading(true);
-    setTimeout(() => {
-      localStorage.setItem('auth', '1');
+    try {
+      const { token } = await authApi.login(email, password);
+      localStorage.setItem('auth', token);
       navigate('/admin');
-    }, 500);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'שגיאת התחברות');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -25,17 +33,41 @@ export default function Login() {
         <form onSubmit={onSubmit} className="glass p-8">
           <h1 className="text-2xl font-bold mb-1">התחברות</h1>
           <p className="text-forti-mute text-sm mb-6">כניסה לפאנל הניהול</p>
+
+          {error && (
+            <div className="mb-4 p-3 rounded bg-forti-red/20 border border-forti-red/40 text-forti-red text-sm">
+              {error}
+            </div>
+          )}
+
           <div className="space-y-4">
             <div>
               <label className="label">אימייל</label>
-              <input type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <input
+                type="email"
+                className="input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
             <div>
               <label className="label">סיסמה</label>
-              <input type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+              <input
+                type="password"
+                className="input"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
             </div>
           </div>
-          <button disabled={loading} className="btn-primary w-full mt-6 py-3 disabled:opacity-60">
+
+          <button
+            disabled={loading}
+            className="btn-primary w-full mt-6 py-3 disabled:opacity-60"
+          >
             {loading ? 'מתחבר...' : 'התחברות'}
           </button>
           <p className="mt-4 text-xs text-forti-mute text-center">גישה למורשים בלבד · SpotNet</p>
