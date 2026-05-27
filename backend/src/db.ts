@@ -115,6 +115,11 @@ const DEFAULT_SETTINGS = {
 // Seed with mock data (runs only if tables are empty)
 // ---------------------------------------------------------------------------
 export function seedDatabase() {
+  // Set SKIP_SEED=true in production to start with an empty DB
+  if (process.env.SKIP_SEED === 'true') {
+    console.log('⏭️  SKIP_SEED=true — skipping mock data seed');
+    return;
+  }
   const countRow = db.prepare('SELECT COUNT(*) as cnt FROM participants').get() as { cnt: number };
   if (countRow.cnt > 0) {
     console.log(`📦 DB already has ${countRow.cnt} participants — skipping seed`);
