@@ -17,22 +17,33 @@ function buildHeaders(): Record<string, string> {
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    method,
-    headers: buildHeaders(),
-    body: body != null ? JSON.stringify(body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      method,
+      headers: buildHeaders(),
+      body: body != null ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new Error('לא ניתן להתחבר לשרת – ודא שהבקאנד פועל');
+  }
+
+  // Read body as text first to avoid "Unexpected end of JSON input"
+  const text = await res.text();
 
   if (!res.ok) {
-    let msg = `HTTP ${res.status}`;
-    try {
-      const j = await res.json();
-      if (j?.error) msg = j.error;
-    } catch { /* ignore */ }
+    let msg = `שגיאת שרת (${res.status})`;
+    if (text) {
+      try {
+        const j = JSON.parse(text);
+        if (j?.error) msg = j.error;
+      } catch { /* not JSON – use raw text */ }
+    }
     throw new Error(msg);
   }
 
-  return res.json() as Promise<T>;
+  if (!text) return undefined as T;
+  return JSON.parse(text) as T;
 }
 
 // ---------------------------------------------------------------------------
