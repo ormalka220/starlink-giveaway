@@ -2,8 +2,13 @@ import type { Participant, Winner, SmsMessage, RaffleSettings } from '../types';
 
 // ---------------------------------------------------------------------------
 // HTTP client
+// VITE_API_URL  – set in Netlify env vars to your Render backend URL
+//                 e.g. https://starlink-giveaway-backend.onrender.com
+// Leave empty for local dev (Vite proxy forwards /api → localhost:3001)
 // ---------------------------------------------------------------------------
-const BASE = '/api';
+const BASE = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : '/api';
 
 function getToken(): string | null {
   return localStorage.getItem('auth');
