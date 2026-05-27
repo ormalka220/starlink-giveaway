@@ -72,9 +72,12 @@ async function sendViaSMS(
   message: string,
   apiKey: string,
   test: boolean,
-): Promise<{ success: boolean; textId?: string; error?: string }> {
+): Promise<{ success: boolean; textId?: string; quotaRemaining?: number; error?: string }> {
   const key = test ? `${apiKey}_test` : apiKey;
-  const body = new URLSearchParams({ phone: normalizePhone(phone), message, key });
+  const normalized = normalizePhone(phone);
+  const body = new URLSearchParams({ phone: normalized, message, key });
+
+  console.log(`  → Textbelt: phone=${normalized} test=${test}`);
 
   try {
     const res = await fetch('https://textbelt.com/text', {
@@ -82,8 +85,11 @@ async function sendViaSMS(
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString(),
     });
-    return (await res.json()) as { success: boolean; textId?: string; error?: string };
+    const data = await res.json() as { success: boolean; textId?: string; quotaRemaining?: number; error?: string };
+    console.log(`  ← Textbelt response:`, JSON.stringify(data));
+    return data;
   } catch (err) {
+    console.error(`  ← Textbelt fetch error:`, err);
     return { success: false, error: String(err) };
   }
 }
@@ -131,11 +137,22 @@ smsRouter.post('/', async (req, res) => {
     );
   }
 
+  // ── Check quota before sending ──────────────────────────────────────────
+  try {
+    const quotaRes = await fetch(`https://textbelt.com/quota/${apiKey}`);
+    const quotaData = await quotaRes.json() as { success: boolean; quotaRemaining: number };
+    console.log(`💳 Textbelt quota remaining: ${quotaData.quotaRemaining}`);
+    if (quotaData.quotaRemaining <= 0) {
+      return res.status(402).json({ error: 'אין קרדיטים ב-Textbelt. יש לרכוש קרדיטים.' });
+    }
+  } catch { /* quota check failed — continue anyway */ }
+
   // ── Real sending via Textbelt ────────────────────────────────────────────
   console.log(`📱 Sending SMS to ${recipients.length} recipient(s) [test=${test}]`);
 
-  let sent    = 0;
-  let failed  = 0;
+  let sent   = 0;
+  let failed = 0;
+  const textIds: string[] = [];
 
   // Send in small batches of 5 to avoid flooding
   const BATCH = 5;
@@ -149,6 +166,7 @@ smsRouter.post('/', async (req, res) => {
       const recipient = batch[idx];
       if (result.success) {
         sent++;
+        if (result.textId) textIds.push(result.textId);
         if (recipient.id !== 'manual') {
           db.prepare("UPDATE participants SET smsStatus = 'נשלח' WHERE id = ?").run(recipient.id);
         }
@@ -178,8 +196,8 @@ smsRouter.post('/', async (req, res) => {
 
   const row = db.prepare('SELECT * FROM sms_messages WHERE id = ?').get(id);
 
-  console.log(`✅ SMS batch done: ${sent} sent, ${failed} failed`);
-  return res.status(201).json({ ...(row as object), sent, failed });
+  console.log(`✅ SMS batch done: ${sent} sent, ${failed} failed | textIds: ${textIds.join(',')}`);
+  return res.status(201).json({ ...(row as object), sent, failed, textIds });
 });
 
 // ---------------------------------------------------------------------------
