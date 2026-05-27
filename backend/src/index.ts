@@ -13,9 +13,22 @@ const PORT = Number(process.env.PORT) || 3001;
 // ---------------------------------------------------------------------------
 // Middleware
 // ---------------------------------------------------------------------------
+// CORS – allow localhost in dev + any FRONTEND_URL set in env (Netlify/Render URL)
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:4173',
+  'http://localhost:3000',
+  ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+];
+
 app.use(
   cors({
-    origin: ['http://localhost:5173', 'http://localhost:4173', 'http://localhost:3000'],
+    origin: (origin, cb) => {
+      // Allow requests with no origin (curl, mobile apps, same-origin)
+      if (!origin) return cb(null, true);
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+      cb(new Error(`CORS: origin ${origin} not allowed`));
+    },
     credentials: true,
   }),
 );

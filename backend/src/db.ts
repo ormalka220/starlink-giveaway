@@ -5,9 +5,13 @@ import { v4 as uuidv4 } from 'uuid';
 
 // ---------------------------------------------------------------------------
 // Database path
+// DB_PATH env var lets you point to a persistent disk on Render/Railway etc.
+// Default: <repo-root>/data/raffle.db
 // ---------------------------------------------------------------------------
-const DATA_DIR = path.join(__dirname, '../../data');
-const DB_PATH = path.join(DATA_DIR, 'raffle.db');
+const DATA_DIR = process.env.DB_PATH
+  ? path.dirname(process.env.DB_PATH)
+  : path.join(__dirname, '../../data');
+const DB_PATH = process.env.DB_PATH || path.join(DATA_DIR, 'raffle.db');
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
