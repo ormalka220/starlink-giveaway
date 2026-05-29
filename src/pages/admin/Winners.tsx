@@ -4,6 +4,8 @@ import { api } from '../../services/api';
 import { useToast } from '../../components/Toast';
 import type { Winner } from '../../types';
 
+const winnerSmsTemplate = 'ברכות! זכית בהגרלת Starlink בכנס Fortinet. נציג שלנו יצור איתך קשר.';
+
 export default function WinnersPage() {
   const { push } = useToast();
   const [winners, setWinners] = useState<Winner[]>([]);
@@ -13,6 +15,21 @@ export default function WinnersPage() {
 
   function update(id: string, patch: Partial<Winner>, msg: string) {
     api.updateWinner(id, patch).then(() => { push(msg); refresh(); });
+  }
+
+  async function sendWinnerSms(winner: Winner) {
+    try {
+      const result = await api.sendSms(winnerSmsTemplate, winner.phone, 1);
+      if ((result.sent ?? result.recipientsCount) <= 0) {
+        push(result.error || 'SMS לא נשלח לזוכה', 'error');
+        return;
+      }
+      await api.updateWinner(winner.id, { smsSent: true });
+      push('SMS נשלח לזוכה');
+      refresh();
+    } catch (err) {
+      push(err instanceof Error ? err.message : 'SMS לא נשלח לזוכה', 'error');
+    }
   }
 
   function exportCsv() {
@@ -58,7 +75,7 @@ export default function WinnersPage() {
                     <td className="px-4 py-3 text-xs text-forti-mute max-w-[12rem] truncate">{w.notes ?? '-'}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
-                        <button onClick={() => update(w.id, { smsSent: true }, 'SMS נשלח')} className="px-2 py-1 text-xs rounded-md bg-forti-panel2 hover:bg-forti-line">שלח SMS</button>
+                        <button onClick={() => sendWinnerSms(w)} className="px-2 py-1 text-xs rounded-md bg-forti-panel2 hover:bg-forti-line">שלח SMS</button>
                         <button onClick={() => update(w.id, { contacted: true }, 'סומן כיצר קשר')} className="px-2 py-1 text-xs rounded-md bg-forti-panel2 hover:bg-forti-line">יצר קשר</button>
                         <button onClick={() => update(w.id, { prizeDelivered: true }, 'הפרס סומן כנמסר')} className="px-2 py-1 text-xs rounded-md bg-forti-panel2 hover:bg-forti-green/30">פרס נמסר</button>
                         <button onClick={() => update(w.id, { confirmed: false }, 'הזכייה בוטלה')} className="px-2 py-1 text-xs rounded-md bg-forti-panel2 hover:bg-forti-red/30">בטל</button>

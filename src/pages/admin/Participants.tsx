@@ -133,7 +133,7 @@ export default function ParticipantsPage() {
             </div>
 
             <div className="mt-6 space-y-2">
-              <button onClick={() => { api.sendSms('הודעה אישית', selected.fullName, 1).then(() => push('SMS נשלח לזוכה')); }} className="btn-accent w-full">שלח SMS אישי</button>
+              <button onClick={() => { api.sendSms('הודעה אישית', selected.phone, 1).then(() => push('SMS נשלח למשתתף')); }} className="btn-accent w-full">שלח SMS אישי</button>
               <button onClick={() => { api.markInvalid(selected.id).then(() => { push('המשתתף סומן כלא תקין'); refresh(); setSelected(null); }); }} className="btn-ghost w-full">סמן כלא תקין</button>
               <button onClick={() => { api.markInvalid(selected.id).then(() => { push('הוסר מההגרלה'); refresh(); setSelected(null); }); }} className="btn-ghost w-full">הסר מהגרלה</button>
             </div>

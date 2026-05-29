@@ -47,6 +47,10 @@ export interface SmsMessage {
   recipientsCount: number;
   sentAt: string;
   status: 'נשלח' | 'בתהליך' | 'נכשל';
+  sent?: number;
+  failed?: number;
+  textIds?: string[];
+  error?: string;
 }
 
 export interface RaffleSettings {

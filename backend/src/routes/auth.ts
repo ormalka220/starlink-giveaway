@@ -4,8 +4,8 @@ import { JWT_SECRET } from '../middleware/auth';
 
 export const authRouter = Router();
 
-const ADMIN_EMAIL    = process.env.ADMIN_EMAIL    || 'admin@spotnet.co.il';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'spotnet2024';
+const ADMIN_EMAIL    = process.env.ADMIN_EMAIL    || 'admin@example.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'change-me';
 
 // POST /api/auth/login
 authRouter.post('/login', (req, res) => {

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db, toWinner, toParticipant } from '../db';
 import { authenticate } from '../middleware/auth';
+import { sendSmsToRecipients, WINNER_SMS_TEMPLATE } from '../smsService';
 
 export const winnersRouter = Router();
 
@@ -20,32 +21,53 @@ winnersRouter.get('/', (_req, res) => {
 // POST /api/winners  — confirm a winner from the draw
 // body: { participantId: string }
 // ---------------------------------------------------------------------------
-winnersRouter.post('/', (req, res) => {
-  const { participantId } = req.body as { participantId?: string };
-  if (!participantId) {
-    return res.status(400).json({ error: 'participantId is required' });
+winnersRouter.post('/', async (req, res) => {
+  try {
+    const { participantId } = req.body as { participantId?: string };
+    if (!participantId) {
+      return res.status(400).json({ error: 'participantId is required' });
+    }
+
+    const existing = db.prepare('SELECT * FROM winners WHERE participantId = ?').get(participantId) as Record<string, unknown> | undefined;
+    if (existing) {
+      return res.json(toWinner(existing));
+    }
+
+    const p = db.prepare('SELECT * FROM participants WHERE id = ?').get(participantId) as Record<string, unknown> | undefined;
+    if (!p) {
+      return res.status(404).json({ error: 'משתתף לא נמצא' });
+    }
+
+    const id = `w_${uuidv4().slice(0, 8)}`;
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO winners
+        (id, participantId, fullName, company, phone, email, wonAt,
+         confirmed, smsSent, contacted, prizeDelivered)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, 0, 0)
+    `).run(id, participantId, p.fullName, p.company, p.phone, p.email, now);
+
+    // Mark participant as winner
+    db.prepare("UPDATE participants SET raffleStatus = 'זכה' WHERE id = ?").run(participantId);
+
+    try {
+      const smsResult = await sendSmsToRecipients({
+        content: WINNER_SMS_TEMPLATE,
+        audience: String(p.phone),
+        recipients: [{ id: participantId, phone: String(p.phone) }],
+      });
+      db.prepare('UPDATE winners SET smsSent = ? WHERE id = ?').run(smsResult.sent > 0 ? 1 : 0, id);
+    } catch (err) {
+      console.error('Winner SMS failed:', err);
+    }
+
+    const row = db.prepare('SELECT * FROM winners WHERE id = ?').get(id) as Record<string, unknown>;
+    return res.status(201).json(toWinner(row));
+  } catch (err) {
+    console.error('Failed to confirm winner:', err);
+    return res.status(500).json({ error: 'שגיאה באישור הזוכה' });
   }
-
-  const p = db.prepare('SELECT * FROM participants WHERE id = ?').get(participantId) as Record<string, unknown> | undefined;
-  if (!p) {
-    return res.status(404).json({ error: 'משתתף לא נמצא' });
-  }
-
-  const id = `w_${uuidv4().slice(0, 8)}`;
-  const now = new Date().toISOString();
-
-  db.prepare(`
-    INSERT INTO winners
-      (id, participantId, fullName, company, phone, email, wonAt,
-       confirmed, smsSent, contacted, prizeDelivered)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, 0, 0)
-  `).run(id, participantId, p.fullName, p.company, p.phone, p.email, now);
-
-  // Mark participant as winner
-  db.prepare("UPDATE participants SET raffleStatus = 'זכה' WHERE id = ?").run(participantId);
-
-  const row = db.prepare('SELECT * FROM winners WHERE id = ?').get(id) as Record<string, unknown>;
-  return res.status(201).json(toWinner(row));
 });
 
 // ---------------------------------------------------------------------------

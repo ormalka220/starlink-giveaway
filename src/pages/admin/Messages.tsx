@@ -24,12 +24,22 @@ export default function Messages() {
   async function send(test = false) {
     if (!content.trim()) { push('יש להזין תוכן הודעה', 'error'); return; }
     setSending(true);
-    const finalAudience = tab === 'הודעה אישית' ? phone : audience;
-    const finalCount = test ? 1 : tab === 'הודעה אישית' ? 1 : recipients;
-    await api.sendSms(content, finalAudience, finalCount, test);
-    setSending(false);
-    push(test ? '✅ הודעת בדיקה נשלחה (ללא חיוב קרדיטים)' : `✅ ההודעה נשלחה ל-${finalCount} נמענים`);
-    api.listSms().then(setHistory);
+    try {
+      const finalAudience = tab === 'הודעה אישית' ? phone : audience;
+      const finalCount = test ? 1 : tab === 'הודעה אישית' ? 1 : recipients;
+      const result = await api.sendSms(content, finalAudience, finalCount, test);
+      const sent = result.sent ?? result.recipientsCount;
+      if (sent <= 0) {
+        push(result.error || 'ההודעה לא נשלחה', 'error');
+        return;
+      }
+      push(test ? '✅ הודעת בדיקה נשלחה (ללא חיוב קרדיטים)' : `✅ ההודעה נשלחה ל-${sent} נמענים`);
+      api.listSms().then(setHistory);
+    } catch (err) {
+      push(err instanceof Error ? err.message : 'ההודעה לא נשלחה', 'error');
+    } finally {
+      setSending(false);
+    }
   }
 
   return (

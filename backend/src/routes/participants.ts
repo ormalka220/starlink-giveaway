@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db, toParticipant } from '../db';
 import { authenticate } from '../middleware/auth';
+import { sendSmsToRecipients } from '../smsService';
 
 export const participantsRouter = Router();
 
@@ -24,78 +25,98 @@ participantsRouter.get('/eligible', authenticate, (_req, res) => {
 // ---------------------------------------------------------------------------
 // POST /api/participants  (public – registration form)
 // ---------------------------------------------------------------------------
-participantsRouter.post('/', (req, res) => {
-  const { fullName, company, role, phone, email, isBusinessCustomer, interest, marketingConsent, source } = req.body as {
-    fullName?: string;
-    company?: string;
-    role?: string;
-    phone?: string;
-    email?: string;
-    isBusinessCustomer?: boolean;
-    interest?: string;
-    marketingConsent?: boolean;
-    source?: string;
-  };
+participantsRouter.post('/', async (req, res) => {
+  try {
+    const { fullName, company, role, phone, email, isBusinessCustomer, interest, marketingConsent, source } = req.body as {
+      fullName?: string;
+      company?: string;
+      role?: string;
+      phone?: string;
+      email?: string;
+      isBusinessCustomer?: boolean;
+      interest?: string;
+      marketingConsent?: boolean;
+      source?: string;
+    };
 
-  if (!fullName || !phone || !email) {
-    return res.status(400).json({ error: 'שם, טלפון ואימייל הם שדות חובה' });
-  }
-
-  // Fetch settings for duplicate checks
-  const settingsRow = db.prepare("SELECT value FROM settings WHERE key = 'all'").get() as { value: string } | undefined;
-  const settings = settingsRow ? JSON.parse(settingsRow.value) : {};
-
-  if (settings.preventDuplicatePhone) {
-    const exists = db.prepare('SELECT id FROM participants WHERE phone = ?').get(phone.trim());
-    if (exists) {
-      return res.status(409).json({ error: 'מספר הטלפון כבר רשום להגרלה' });
+    if (!fullName || !phone || !email) {
+      return res.status(400).json({ error: 'שם, טלפון ואימייל הם שדות חובה' });
     }
-  }
 
-  if (settings.preventDuplicateEmail) {
-    const exists = db.prepare('SELECT id FROM participants WHERE email = ?').get(email.trim().toLowerCase());
-    if (exists) {
-      return res.status(409).json({ error: 'כתובת האימייל כבר רשומה להגרלה' });
+    // Fetch settings for duplicate checks
+    const settingsRow = db.prepare("SELECT value FROM settings WHERE key = 'all'").get() as { value: string } | undefined;
+    const settings = settingsRow ? JSON.parse(settingsRow.value) : {};
+
+    if (settings.preventDuplicatePhone) {
+      const exists = db.prepare('SELECT id FROM participants WHERE phone = ?').get(phone.trim());
+      if (exists) {
+        return res.status(409).json({ error: 'מספר הטלפון כבר רשום להגרלה' });
+      }
     }
+
+    if (settings.preventDuplicateEmail) {
+      const exists = db.prepare('SELECT id FROM participants WHERE email = ?').get(email.trim().toLowerCase());
+      if (exists) {
+        return res.status(409).json({ error: 'כתובת האימייל כבר רשומה להגרלה' });
+      }
+    }
+
+    // Check registration is open
+    if (settings.registrationOpen === false) {
+      return res.status(403).json({ error: 'ההרשמה להגרלה סגורה כרגע' });
+    }
+
+    // Generate unique IDs
+    const id = `p_${uuidv4().slice(0, 8)}`;
+    const countRow = db.prepare('SELECT COUNT(*) as cnt FROM participants').get() as { cnt: number };
+    const ticketId = `FT-${String(2000 + countRow.cnt)}`;
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO participants
+        (id, ticketId, fullName, company, role, phone, email,
+         isBusinessCustomer, interest, marketingConsent, source, registeredAt, smsStatus, raffleStatus)
+      VALUES
+        (@id, @ticketId, @fullName, @company, @role, @phone, @email,
+         @isBusinessCustomer, @interest, @marketingConsent, @source, @registeredAt, @smsStatus, @raffleStatus)
+    `).run({
+      id,
+      ticketId,
+      fullName: fullName.trim(),
+      company: (company || '').trim(),
+      role: (role || '').trim(),
+      phone: phone.trim(),
+      email: email.trim().toLowerCase(),
+      isBusinessCustomer: isBusinessCustomer ? 1 : 0,
+      interest: interest || 'אחר',
+      marketingConsent: marketingConsent ? 1 : 0,
+      source: source || 'web',
+      registeredAt: now,
+      smsStatus: 'ממתין',
+      raffleStatus: 'פעיל',
+    });
+
+    if (settings.autoSmsEnabled !== false && settings.autoSmsTemplate) {
+      try {
+        await sendSmsToRecipients({
+          content: String(settings.autoSmsTemplate),
+          audience: phone.trim(),
+          recipients: [{ id, phone: phone.trim() }],
+        });
+      } catch (err) {
+        console.error('Registration SMS failed:', err);
+        db.prepare("UPDATE participants SET smsStatus = 'נכשל' WHERE id = ?").run(id);
+      }
+    } else {
+      db.prepare("UPDATE participants SET smsStatus = 'לא נשלח' WHERE id = ?").run(id);
+    }
+
+    const row = db.prepare('SELECT * FROM participants WHERE id = ?').get(id) as Record<string, unknown>;
+    return res.status(201).json(toParticipant(row));
+  } catch (err) {
+    console.error('Failed to register participant:', err);
+    return res.status(500).json({ error: 'שגיאה בהרשמה להגרלה' });
   }
-
-  // Check registration is open
-  if (settings.registrationOpen === false) {
-    return res.status(403).json({ error: 'ההרשמה להגרלה סגורה כרגע' });
-  }
-
-  // Generate unique IDs
-  const id = `p_${uuidv4().slice(0, 8)}`;
-  const countRow = db.prepare('SELECT COUNT(*) as cnt FROM participants').get() as { cnt: number };
-  const ticketId = `FT-${String(2000 + countRow.cnt)}`;
-  const now = new Date().toISOString();
-
-  db.prepare(`
-    INSERT INTO participants
-      (id, ticketId, fullName, company, role, phone, email,
-       isBusinessCustomer, interest, marketingConsent, source, registeredAt, smsStatus, raffleStatus)
-    VALUES
-      (@id, @ticketId, @fullName, @company, @role, @phone, @email,
-       @isBusinessCustomer, @interest, @marketingConsent, @source, @registeredAt, @smsStatus, @raffleStatus)
-  `).run({
-    id,
-    ticketId,
-    fullName: fullName.trim(),
-    company: (company || '').trim(),
-    role: (role || '').trim(),
-    phone: phone.trim(),
-    email: email.trim().toLowerCase(),
-    isBusinessCustomer: isBusinessCustomer ? 1 : 0,
-    interest: interest || 'אחר',
-    marketingConsent: marketingConsent ? 1 : 0,
-    source: source || 'web',
-    registeredAt: now,
-    smsStatus: 'ממתין',
-    raffleStatus: 'פעיל',
-  });
-
-  const row = db.prepare('SELECT * FROM participants WHERE id = ?').get(id) as Record<string, unknown>;
-  return res.status(201).json(toParticipant(row));
 });
 
 // ---------------------------------------------------------------------------

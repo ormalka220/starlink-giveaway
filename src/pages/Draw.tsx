@@ -110,16 +110,21 @@ export default function Draw() {
   async function confirmWinner() {
     if (!winner) return;
     if (demo) { push('מצב הדגמה - לא נשמר'); setShowWinnerOverlay(false); return; }
-    await api.confirmWinner(winner.id);
-    push('הזכייה אושרה ונשמרה');
+    const confirmed = await api.confirmWinner(winner.id);
+    push(confirmed.smsSent ? 'הזכייה אושרה ונשלח SMS לזוכה' : 'הזכייה אושרה, אך SMS לא נשלח');
     setShowWinnerOverlay(false);
     api.eligibleForDraw().then(setEligible);
   }
 
-  function sendSmsToWinner() {
+  async function sendSmsToWinner() {
     if (!winner) return;
-    api.sendSms(`ברכות! זכית בהגרלת Starlink בכנס Fortinet. נציג שלנו יצור איתך קשר.`, winner.fullName, 1);
-    push('SMS נשלח לזוכה');
+    if (demo) { push('מצב הדגמה - לא נשלח SMS'); return; }
+    try {
+      const result = await api.sendSms(`ברכות! זכית בהגרלת Starlink בכנס Fortinet. נציג שלנו יצור איתך קשר.`, winner.phone, 1);
+      push((result.sent ?? result.recipientsCount) > 0 ? 'SMS נשלח לזוכה' : 'SMS לא נשלח לזוכה', (result.sent ?? result.recipientsCount) > 0 ? 'success' : 'error');
+    } catch (err) {
+      push(err instanceof Error ? err.message : 'SMS לא נשלח לזוכה', 'error');
+    }
   }
 
   return (

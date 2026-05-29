@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { seedDatabase } from './db';
@@ -21,12 +22,24 @@ const allowedOrigins = [
   ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
 ];
 
+function isAllowedOrigin(origin: string): boolean {
+  if (allowedOrigins.includes(origin)) return true;
+
+  try {
+    const url = new URL(origin);
+    const isLocalHost = ['localhost', '127.0.0.1', '[::1]', '::1'].includes(url.hostname);
+    return url.protocol === 'http:' && isLocalHost;
+  } catch {
+    return false;
+  }
+}
+
 app.use(
   cors({
     origin: (origin, cb) => {
       // Allow requests with no origin (curl, mobile apps, same-origin)
       if (!origin) return cb(null, true);
-      if (allowedOrigins.includes(origin)) return cb(null, true);
+      if (isAllowedOrigin(origin)) return cb(null, true);
       cb(new Error(`CORS: origin ${origin} not allowed`));
     },
     credentials: true,
@@ -56,7 +69,7 @@ seedDatabase();
 app.listen(PORT, () => {
   console.log(`\n🚀  Backend API running → http://localhost:${PORT}/api`);
   console.log(`📊  SQLite DB          → data/raffle.db`);
-  console.log(`🔐  Admin login        → ${process.env.ADMIN_EMAIL || 'admin@spotnet.co.il'}\n`);
+  console.log(`🔐  Admin login        → ${process.env.ADMIN_EMAIL || 'admin@example.com'}\n`);
 });
 
 export default app;

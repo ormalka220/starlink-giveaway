@@ -15,7 +15,7 @@ services:
       - key: ADMIN_EMAIL
         value: admin@spotnet.co.il
       - key: ADMIN_PASSWORD
-        value: spotnet2024
+        sync: false
       # Textbelt SMS API key – set this in Render dashboard (keep secret!)
       # - key: TEXTBELT_API_KEY
       #   value: your_key_here
