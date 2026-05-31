@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import { useToast } from '../components/Toast';
 import { indexAtPointer, targetAngleForIndex } from '../utils/wheelMath';
 import { createDrawSoundEngine, createTickTracker } from '../utils/drawSounds';
+import { launchWinCelebration } from '../utils/winCelebration';
 import type { Participant } from '../types';
 
 const COLORS = ['#EE3124', '#22D3EE', '#22C55E', '#A855F7', '#F59E0B', '#EC4899', '#3B82F6', '#10B981'];
@@ -18,9 +19,22 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
   const angleRef = useRef(0);
   const listRef = useRef<Participant[]>([]);
   const soundsRef = useRef(createDrawSoundEngine());
+  const celebrationRef = useRef<ReturnType<typeof launchWinCelebration> | null>(null);
   const [soundOn, setSoundOn] = useState(true);
 
+  function stopCelebration() {
+    celebrationRef.current?.stop();
+    celebrationRef.current = null;
+  }
+
+  function closeWinnerOverlay() {
+    stopCelebration();
+    setShowWinnerOverlay(false);
+  }
+
   useEffect(() => { api.eligibleForDraw().then(setEligible); }, []);
+
+  useEffect(() => () => stopCelebration(), []);
 
   const list = useMemo(() => {
     if (demo) {
@@ -91,6 +105,7 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
   function spin() {
     const participants = listRef.current;
     if (spinning || participants.length === 0) return;
+    stopCelebration();
     setShowWinnerOverlay(false);
     setWinner(null);
     setSpinning(true);
@@ -127,6 +142,7 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
       drawWheel(target, participants);
       const visualIdx = indexAtPointer(target, participants.length);
       sounds.win();
+      celebrationRef.current = launchWinCelebration();
       setAngle(target);
       setWinner(participants[visualIdx]);
       setShowWinnerOverlay(true);
@@ -137,10 +153,10 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
 
   async function confirmWinner() {
     if (!winner) return;
-    if (demo) { push('מצב הדגמה - לא נשמר'); setShowWinnerOverlay(false); return; }
+    if (demo) { push('מצב הדגמה - לא נשמר'); closeWinnerOverlay(); return; }
     const confirmed = await api.confirmWinner(winner.id);
     push(confirmed.smsSent ? 'הזכייה אושרה ונשלח SMS לזוכה' : 'הזכייה אושרה, אך SMS לא נשלח');
-    setShowWinnerOverlay(false);
+    closeWinnerOverlay();
     api.eligibleForDraw().then(setEligible);
   }
 
@@ -227,8 +243,8 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
             <div className="mt-8 flex flex-wrap gap-3 justify-center">
               <button onClick={confirmWinner} className="btn-primary text-lg px-6 py-3">אשר זכייה</button>
               <button onClick={sendSmsToWinner} className="btn-accent">שלח SMS לזוכה</button>
-              <button onClick={() => { setShowWinnerOverlay(false); setWinner(null); spin(); }} className="btn-ghost">הגרל מחדש</button>
-              <button onClick={() => setShowWinnerOverlay(false)} className="btn-ghost">סגור</button>
+              <button onClick={() => { closeWinnerOverlay(); setWinner(null); spin(); }} className="btn-ghost">הגרל מחדש</button>
+              <button onClick={closeWinnerOverlay} className="btn-ghost">סגור</button>
             </div>
           </div>
         </div>
