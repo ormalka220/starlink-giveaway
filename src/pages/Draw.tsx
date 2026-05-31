@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../services/api';
 import { useToast } from '../components/Toast';
+import { indexAtPointer, targetAngleForIndex } from '../utils/wheelMath';
 import type { Participant } from '../types';
 
 const COLORS = ['#EE3124', '#22D3EE', '#22C55E', '#A855F7', '#F59E0B', '#EC4899', '#3B82F6', '#10B981'];
@@ -13,6 +14,8 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
   const [winner, setWinner] = useState<Participant | null>(null);
   const [showWinnerOverlay, setShowWinnerOverlay] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const angleRef = useRef(0);
+  const listRef = useRef<Participant[]>([]);
 
   useEffect(() => { api.eligibleForDraw().then(setEligible); }, []);
 
@@ -23,28 +26,27 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
     return eligible.slice(0, 50);
   }, [demo, eligible]);
 
-  useEffect(() => { drawWheel(); }, [list, angle]);
+  listRef.current = list;
 
-  function drawWheel() {
+  const drawWheel = useCallback((currentAngle: number, participants: Participant[]) => {
     const c = canvasRef.current;
     if (!c) return;
     const ctx = c.getContext('2d')!;
     const size = c.width;
     const r = size / 2;
     ctx.clearRect(0, 0, size, size);
-    if (list.length === 0) {
+    if (participants.length === 0) {
       ctx.fillStyle = '#161D30';
       ctx.beginPath(); ctx.arc(r, r, r - 4, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#8A93AD'; ctx.font = '24px Heebo'; ctx.textAlign = 'center';
       ctx.fillText('אין משתתפים', r, r);
       return;
     }
-    const slice = (Math.PI * 2) / list.length;
+    const slice = (Math.PI * 2) / participants.length;
     ctx.save();
     ctx.translate(r, r);
-    // Slice 0 starts at top (pointer), not at 3 o'clock
-    ctx.rotate((angle * Math.PI) / 180 - Math.PI / 2);
-    list.forEach((p, i) => {
+    ctx.rotate((currentAngle * Math.PI) / 180 - Math.PI / 2);
+    participants.forEach((p, i) => {
       ctx.beginPath();
       ctx.moveTo(0, 0);
       ctx.arc(0, 0, r - 8, i * slice, (i + 1) * slice);
@@ -76,37 +78,45 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
     ctx.strokeStyle = '#EE3124';
     ctx.lineWidth = 3;
     ctx.stroke();
-  }
+  }, []);
 
-  async function spin() {
-    if (spinning || list.length === 0) return;
+  useEffect(() => {
+    angleRef.current = angle;
+    drawWheel(angle, list);
+  }, [list, angle, drawWheel]);
+
+  function spin() {
+    const participants = listRef.current;
+    if (spinning || participants.length === 0) return;
     setShowWinnerOverlay(false);
     setWinner(null);
     setSpinning(true);
 
-    const winnerIdx = Math.floor(Math.random() * list.length);
-    const slice = 360 / list.length;
-    const centerAngle = winnerIdx * slice + slice / 2;
-    const stopAngle = (360 - centerAngle + 360) % 360;
+    const winnerIdx = Math.floor(Math.random() * participants.length);
+    const from = angleRef.current;
+    const target = targetAngleForIndex(winnerIdx, participants.length, from);
     const start = performance.now();
-    const from = angle;
-    const currentMod = ((from % 360) + 360) % 360;
-    let delta = stopAngle - currentMod;
-    if (delta <= 0) delta += 360;
-    const target = from + 360 * 8 + delta;
     const duration = 6000;
 
     function frame(now: number) {
       const t = Math.min(1, (now - start) / duration);
       const eased = 1 - Math.pow(1 - t, 4);
-      setAngle(from + (target - from) * eased);
-      if (t < 1) requestAnimationFrame(frame);
-      else {
-        const w = list[winnerIdx];
-        setWinner(w);
-        setShowWinnerOverlay(true);
-        setSpinning(false);
+      const current = from + (target - from) * eased;
+      angleRef.current = current;
+      drawWheel(current, participants);
+
+      if (t < 1) {
+        requestAnimationFrame(frame);
+        return;
       }
+
+      angleRef.current = target;
+      drawWheel(target, participants);
+      const visualIdx = indexAtPointer(target, participants.length);
+      setAngle(target);
+      setWinner(participants[visualIdx]);
+      setShowWinnerOverlay(true);
+      setSpinning(false);
     }
     requestAnimationFrame(frame);
   }

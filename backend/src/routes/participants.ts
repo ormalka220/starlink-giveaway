@@ -18,7 +18,7 @@ participantsRouter.get('/', authenticate, (_req, res) => {
 // GET /api/participants/eligible  (admin only – for the draw)
 // ---------------------------------------------------------------------------
 participantsRouter.get('/eligible', authenticate, (_req, res) => {
-  const rows = db.prepare("SELECT * FROM participants WHERE raffleStatus = 'פעיל'").all() as Record<string, unknown>[];
+  const rows = db.prepare("SELECT * FROM participants WHERE raffleStatus = 'פעיל' ORDER BY ticketId ASC").all() as Record<string, unknown>[];
   return res.json(rows.map(toParticipant));
 });
 
