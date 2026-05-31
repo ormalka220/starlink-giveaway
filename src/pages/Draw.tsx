@@ -145,8 +145,8 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
 
       <main className="relative z-10 px-6 pb-10">
         <div className="text-center mb-6">
-          <h1 className="text-5xl md:text-7xl font-black tracking-tight">
-            הגרלת <span className="text-forti-red drop-shadow-[0_0_30px_rgba(238,49,36,0.6)]">Starlink</span>
+          <h1 className="text-5xl md:text-7xl font-black tracking-tight flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
+            הגרלת <img src="/starlink-logo.png" alt="Starlink" className="h-10 md:h-14 w-auto object-contain drop-shadow-[0_0_24px_rgba(255,255,255,0.12)]" />
           </h1>
           <p className="text-forti-mute text-lg mt-2">Fortinet Event · by SpotNet</p>
           <div className="mt-4 inline-flex items-center gap-2 chip text-forti-accent border-forti-accent/40">

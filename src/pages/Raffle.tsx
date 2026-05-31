@@ -52,8 +52,8 @@ export default function Raffle() {
               <span className="h-px w-10 bg-forti-red" />
               <span className="text-forti-red font-semibold">הגרלת אירוע · 2026</span>
             </div>
-            <h1 className="text-5xl md:text-7xl font-black leading-[0.95] tracking-tight">
-              ערכת <span className="text-forti-red">Starlink</span>
+            <h1 className="text-5xl md:text-7xl font-black leading-[0.95] tracking-tight flex flex-wrap items-center gap-x-3 gap-y-2">
+              ערכת <img src="/starlink-logo.png" alt="Starlink" className="h-10 md:h-14 w-auto object-contain" />
               <br />
               <span className="text-forti-mute font-light italic text-4xl md:text-6xl">מחכה למישהו אחד.</span>
             </h1>
