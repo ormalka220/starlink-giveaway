@@ -49,6 +49,9 @@ function firework(originX: number, originY: number) {
   });
 }
 
+const CELEBRATION_MS = 60_000;
+const INTERVAL_MS = 450;
+
 /** Confetti shower + staggered fireworks while the winner overlay is open. */
 export function launchWinCelebration(): CelebrationHandle {
   burst(0.5, 0.62, 140, 110);
@@ -60,12 +63,16 @@ export function launchWinCelebration(): CelebrationHandle {
     ticks += 1;
     if (ticks % 2 === 0) burst(Math.random() * 0.4 + 0.3, Math.random() * 0.25 + 0.55, 36, 90);
     if (ticks % 3 === 0) firework(Math.random() * 0.6 + 0.2, Math.random() * 0.25 + 0.28);
-    if (ticks >= 10) window.clearInterval(interval);
-  }, 450);
+  }, INTERVAL_MS);
+
+  const timeout = window.setTimeout(() => {
+    window.clearInterval(interval);
+  }, CELEBRATION_MS);
 
   return {
     stop() {
       window.clearInterval(interval);
+      window.clearTimeout(timeout);
       confetti.reset();
     },
   };
