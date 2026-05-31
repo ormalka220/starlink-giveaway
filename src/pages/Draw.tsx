@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../services/api';
 import { useToast } from '../components/Toast';
 import { indexAtPointer, targetAngleForIndex } from '../utils/wheelMath';
+import { createDrawSoundEngine, createTickTracker } from '../utils/drawSounds';
 import type { Participant } from '../types';
 
 const COLORS = ['#EE3124', '#22D3EE', '#22C55E', '#A855F7', '#F59E0B', '#EC4899', '#3B82F6', '#10B981'];
@@ -16,6 +17,8 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const angleRef = useRef(0);
   const listRef = useRef<Participant[]>([]);
+  const soundsRef = useRef(createDrawSoundEngine());
+  const [soundOn, setSoundOn] = useState(true);
 
   useEffect(() => { api.eligibleForDraw().then(setEligible); }, []);
 
@@ -92,18 +95,28 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
     setWinner(null);
     setSpinning(true);
 
+    const sounds = soundsRef.current;
+    sounds.setMuted(!soundOn);
+    void sounds.resume();
+
     const winnerIdx = Math.floor(Math.random() * participants.length);
     const from = angleRef.current;
     const target = targetAngleForIndex(winnerIdx, participants.length, from);
     const start = performance.now();
     const duration = 20000;
+    const tickTracker = createTickTracker(participants.length);
+    tickTracker.reset(from);
+    let prevAngle = from;
 
     function frame(now: number) {
       const t = Math.min(1, (now - start) / duration);
       const eased = 1 - Math.pow(1 - t, 4);
       const current = from + (target - from) * eased;
+      const speed = Math.min(1, Math.abs(current - prevAngle) / 8);
+      prevAngle = current;
       angleRef.current = current;
       drawWheel(current, participants);
+      tickTracker.update(current, speed, (s) => sounds.tick(s));
 
       if (t < 1) {
         requestAnimationFrame(frame);
@@ -113,6 +126,7 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
       angleRef.current = target;
       drawWheel(target, participants);
       const visualIdx = indexAtPointer(target, participants.length);
+      sounds.win();
       setAngle(target);
       setWinner(participants[visualIdx]);
       setShowWinnerOverlay(true);
@@ -147,7 +161,7 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
       <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-forti-red/20 rounded-full blur-[140px] animate-pulse-slow" />
       <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] bg-forti-accent/15 rounded-full blur-[140px] animate-pulse-slow" />
 
-      <header className="relative z-10 px-6 md:px-12 py-6 flex items-center">
+      <header className="relative z-10 px-6 md:px-12 py-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <img src="/spotnet-logo.png" alt="SpotNet" className="h-9 md:h-10 object-contain" />
           <span className="hidden md:inline-block h-7 w-px bg-white/15" />
@@ -157,6 +171,14 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
             <span>Event 2026</span>
           </span>
         </div>
+        <button
+          type="button"
+          onClick={() => setSoundOn((v) => !v)}
+          className="chip text-xs"
+          aria-label={soundOn ? 'השתק סאונד' : 'הפעל סאונד'}
+        >
+          {soundOn ? 'סאונד פעיל' : 'סאונד כבוי'}
+        </button>
       </header>
 
       <main className="relative z-10 px-6 pb-10">
