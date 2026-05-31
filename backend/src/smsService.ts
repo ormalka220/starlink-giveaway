@@ -69,6 +69,44 @@ export function resolveRecipients(audience: string): SmsRecipient[] {
   }
 }
 
+type TextbeltDeliveryStatus = 'DELIVERED' | 'SENT' | 'SENDING' | 'FAILED' | 'UNKNOWN';
+
+export async function getDeliveryStatus(textId: string): Promise<TextbeltDeliveryStatus> {
+  try {
+    const res = await fetch(`https://textbelt.com/status/${textId}`);
+    const data = await res.json() as { success?: boolean; status?: TextbeltDeliveryStatus };
+    return data.status ?? 'UNKNOWN';
+  } catch {
+    return 'UNKNOWN';
+  }
+}
+
+async function pollDeliveryStatus(textId: string): Promise<{ status: TextbeltDeliveryStatus; delivered: boolean }> {
+  const maxAttempts = 6;
+  const delayMs = 2000;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    if (attempt > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+
+    const status = await getDeliveryStatus(textId);
+    console.log(`  <- Textbelt delivery status (attempt ${attempt + 1}): ${status}`);
+
+    if (status === 'DELIVERED' || status === 'SENT') {
+      return { status, delivered: true };
+    }
+    if (status === 'FAILED') {
+      return { status, delivered: false };
+    }
+  }
+
+  return { status: 'UNKNOWN', delivered: false };
+}
+
+const DELIVERY_FAILED_ERROR =
+  'Textbelt accepted the SMS but carrier delivery failed. For Israeli numbers (+972), Textbelt often fails — use a local SMS provider (Twilio/Inforu/019).';
+
 async function sendViaTextbelt(
   phone: string,
   message: string,
@@ -78,6 +116,8 @@ async function sendViaTextbelt(
   const key = dryRun ? `${apiKey}_test` : apiKey;
   const normalized = normalizePhone(phone);
   const body = new URLSearchParams({ phone: normalized, message, key });
+  const sender = process.env.SMS_SENDER?.trim();
+  if (sender) body.set('sender', sender);
 
   console.log(`  -> Textbelt: phone=${normalized} test=${dryRun}`);
 
@@ -94,6 +134,29 @@ async function sendViaTextbelt(
     console.error('  <- Textbelt fetch error:', err);
     return { success: false, error: String(err) };
   }
+}
+
+async function sendAndVerifyDelivery(
+  phone: string,
+  content: string,
+  apiKey: string,
+  test: boolean,
+): Promise<{ success: boolean; textId?: string; error?: string }> {
+  const result = await sendViaTextbelt(phone, content, apiKey, test);
+  if (!result.success) return result;
+  if (test || !result.textId) return result;
+
+  const delivery = await pollDeliveryStatus(String(result.textId));
+  if (delivery.delivered) {
+    return { success: true, textId: result.textId };
+  }
+
+  const detail = delivery.status === 'FAILED'
+    ? DELIVERY_FAILED_ERROR
+    : `Delivery status remained ${delivery.status} (textId=${result.textId})`;
+
+  console.error(`  <- SMS not delivered to ${normalizePhone(phone)}: ${detail}`);
+  return { success: false, textId: result.textId, error: detail };
 }
 
 function updateParticipantSmsStatus(recipients: SmsRecipient[], status: string) {
@@ -212,26 +275,25 @@ export async function sendSmsToRecipients({
   let sent = 0;
   let failed = 0;
   const textIds: string[] = [];
+  let lastError: string | undefined;
 
   const batchSize = 5;
   for (let i = 0; i < recipients.length; i += batchSize) {
     const batch = recipients.slice(i, i + batchSize);
-    const results = await Promise.all(
-      batch.map((recipient) => sendViaTextbelt(recipient.phone, content, apiKey, test)),
-    );
 
-    results.forEach((result, index) => {
-      const recipient = batch[index];
+    for (const recipient of batch) {
+      const result = await sendAndVerifyDelivery(recipient.phone, content, apiKey, test);
       if (result.success) {
         sent++;
         if (result.textId) textIds.push(result.textId);
         updateParticipantSmsStatus([recipient], SENT);
       } else {
         failed++;
+        lastError = result.error;
         console.error(`SMS failed to ${recipient.phone}: ${result.error}`);
         updateParticipantSmsStatus([recipient], FAILED);
       }
-    });
+    }
 
     if (i + batchSize < recipients.length) {
       await new Promise((resolve) => setTimeout(resolve, 200));
@@ -240,5 +302,5 @@ export async function sendSmsToRecipients({
 
   const status = failed === 0 ? SENT : sent === 0 ? FAILED : PARTIAL;
   console.log(`SMS batch done: ${sent} sent, ${failed} failed | textIds: ${textIds.join(',')}`);
-  return saveSmsMessage(audience, content, sent, status, sent, failed, textIds);
+  return saveSmsMessage(audience, content, sent, status, sent, failed, textIds, lastError);
 }

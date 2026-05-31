@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db';
 import { authenticate } from '../middleware/auth';
-import { sendSmsToAudience } from '../smsService';
+import { sendSmsToAudience, getDeliveryStatus } from '../smsService';
 
 export const smsRouter = Router();
 
@@ -35,8 +35,11 @@ smsRouter.post('/', async (req, res) => {
   return res.status(201).json(result);
 });
 
-// ---------------------------------------------------------------------------
-// GET /api/sms/quota - check remaining Textbelt credits
+smsRouter.get('/status/:textId', async (req, res) => {
+  const status = await getDeliveryStatus(req.params.textId);
+  return res.json({ textId: req.params.textId, status });
+});
+
 // ---------------------------------------------------------------------------
 smsRouter.get('/quota', async (_req, res) => {
   const apiKey = process.env.TEXTBELT_API_KEY;
