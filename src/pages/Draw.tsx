@@ -96,7 +96,7 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
     const from = angleRef.current;
     const target = targetAngleForIndex(winnerIdx, participants.length, from);
     const start = performance.now();
-    const duration = 6000;
+    const duration = 20000;
 
     function frame(now: number) {
       const t = Math.min(1, (now - start) / duration);
