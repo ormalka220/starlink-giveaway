@@ -18,7 +18,7 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
 
   const list = useMemo(() => {
     if (demo) {
-      return Array.from({ length: 8 }, (_, i) => ({ id: `d_${i}`, ticketId: `FT-${i}`, fullName: `Demo ${i + 1}`, company: 'DemoCo' } as Participant));
+      return Array.from({ length: 8 }, (_, i) => ({ id: `d_${i}`, ticketId: `SPT-${1000 + i}`, fullName: `Demo ${i + 1}`, company: 'DemoCo' } as Participant));
     }
     return eligible.slice(0, 50);
   }, [demo, eligible]);

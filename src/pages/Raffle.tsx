@@ -36,7 +36,7 @@ export default function Raffle() {
     setSubmitting(true);
     try {
       const p = await api.registerParticipant({ ...form, isBusinessCustomer: true, source: 'fortinet_event' });
-      navigate('/raffle/success', { state: { ticketId: p.ticketId, name: p.fullName } });
+      navigate('/raffle/success', { state: { ticketId: p.ticketId, name: p.fullName, smsStatus: p.smsStatus } });
     } catch {
       push('אירעה שגיאה. נסו שוב.', 'error');
       setSubmitting(false);

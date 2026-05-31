@@ -1,9 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
 import PublicLayout from '../layouts/PublicLayout';
+import type { SmsStatus } from '../types';
 
 export default function RaffleSuccess() {
-  const { state } = useLocation() as { state?: { ticketId?: string; name?: string } };
-  const ticketId = state?.ticketId ?? 'FT-0000';
+  const { state } = useLocation() as { state?: { ticketId?: string; name?: string; smsStatus?: SmsStatus } };
+  const ticketId = state?.ticketId ?? 'SPT-0000';
+  const smsStatus = state?.smsStatus;
 
   return (
     <PublicLayout>
@@ -15,7 +17,12 @@ export default function RaffleSuccess() {
             </svg>
           </div>
           <h1 className="text-3xl md:text-4xl font-extrabold">נרשמת בהצלחה להגרלה</h1>
-          <p className="mt-3 text-forti-mute">מספר המשתתף שלך נשמר במערכת. ההגרלה תתקיים במהלך הכנס.</p>
+          <p className="mt-3 text-forti-mute">
+            מספר המשתתף שלך נשמר במערכת. ההגרלה תתקיים במהלך הכנס.
+          </p>
+          {smsStatus === 'נשלח' && (
+            <p className="mt-2 text-sm text-forti-accent">מספר ההרשמה נשלח אליך גם ב-SMS.</p>
+          )}
 
           <div className="mt-8 glass-2 p-6 inline-block">
             <div className="text-xs text-forti-mute mb-1">מספר הרשמה</div>

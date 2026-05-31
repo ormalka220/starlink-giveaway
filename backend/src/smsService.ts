@@ -24,6 +24,24 @@ const SMS4FREE_URL = 'https://api.sms4free.co.il/ApiSMS/v2/SendSMS';
 export const WINNER_SMS_TEMPLATE =
   'ברכות! זכית בהגרלת Starlink בכנס Fortinet. נציג שלנו יצור איתך קשר.';
 
+export const REGISTRATION_SMS_TEMPLATE =
+  'תודה שנרשמת להגרלת Starlink בכנס Fortinet. מספר ההרשמה שלך: {ticketId}. ההגרלה תתקיים במהלך הכנס. בהצלחה, SpotNet';
+
+export function formatRegistrationSms(
+  template: string,
+  vars: { ticketId: string; fullName: string },
+): string {
+  const withPlaceholders = template
+    .replace(/\{ticketId\}/g, vars.ticketId)
+    .replace(/\{fullName\}/g, vars.fullName);
+
+  if (withPlaceholders.includes(vars.ticketId)) {
+    return withPlaceholders;
+  }
+
+  return `${withPlaceholders}\nמספר ההרשמה שלך: ${vars.ticketId}`;
+}
+
 /** Israeli local format for SMS4FREE: 05XXXXXXXX */
 export function normalizePhoneLocal(raw: string): string {
   const digits = raw.replace(/\D/g, '');

@@ -70,6 +70,7 @@ export default function SettingsPage() {
           <div>
             <label className="label">תבנית SMS אוטומטית</label>
             <textarea className="input min-h-[100px]" value={s.autoSmsTemplate} onChange={(e) => upd({ autoSmsTemplate: e.target.value })} />
+            <p className="text-xs text-forti-mute mt-2">משתנים: {'{ticketId}'} · {'{fullName}'}</p>
           </div>
           <div className="grid md:grid-cols-2 gap-3">
             <ToggleCard label="SMS לזוכה" desc="נשלח אוטומטית עם בחירת הזוכה" defaultOn />

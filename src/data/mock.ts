@@ -23,7 +23,7 @@ export const mockParticipants: Participant[] = Array.from({ length: 42 }, (_, i)
   const date = new Date(Date.now() - (i * 27 + 13) * 60000);
   return {
     id: `p_${i + 1}`,
-    ticketId: `FT-${String(1000 + i)}`,
+    ticketId: `SPT-${String(1000 + i)}`,
     fullName: `${fn} ${ln}`,
     company,
     role: roles[i % roles.length],
@@ -70,11 +70,11 @@ export const defaultSettings: RaffleSettings = {
   termsText: 'אני מאשר/ת קבלת עדכונים והודעות בנוגע להגרלה ולפתרונות SpotNet',
   primaryColor: '#EE3124',
   autoSmsEnabled: true,
-  autoSmsTemplate: 'תודה שנרשמת להגרלת Starlink בכנס Fortinet. ההגרלה תתקיים במהלך הכנס. בהצלחה, SpotNet',
+  autoSmsTemplate: 'תודה שנרשמת להגרלת Starlink בכנס Fortinet. מספר ההרשמה שלך: {ticketId}. ההגרלה תתקיים במהלך הכנס. בהצלחה, SpotNet',
 };
 
 export const smsTemplates = [
-  'תודה שנרשמת להגרלת Starlink בכנס Fortinet. ההגרלה תתקיים במהלך הכנס. בהצלחה, SpotNet',
+  'תודה שנרשמת להגרלת Starlink בכנס Fortinet. מספר ההרשמה שלך: {ticketId}. ההגרלה תתקיים במהלך הכנס. בהצלחה, SpotNet',
   'ברכות! זכית בהגרלת Starlink של SpotNet בכנס Fortinet. נציג שלנו יצור איתך קשר להמשך התהליך.',
   'ההגרלה עומדת להתחיל. הישארו באזור הכנס והמתינו להכרזת הזוכה.',
 ];

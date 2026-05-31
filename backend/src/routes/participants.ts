@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db, toParticipant } from '../db';
 import { authenticate } from '../middleware/auth';
-import { sendSmsToRecipients } from '../smsService';
+import { sendSmsToRecipients, formatRegistrationSms } from '../smsService';
 
 export const participantsRouter = Router();
 
@@ -69,7 +69,7 @@ participantsRouter.post('/', async (req, res) => {
     // Generate unique IDs
     const id = `p_${uuidv4().slice(0, 8)}`;
     const countRow = db.prepare('SELECT COUNT(*) as cnt FROM participants').get() as { cnt: number };
-    const ticketId = `FT-${String(2000 + countRow.cnt)}`;
+    const ticketId = `SPT-${String(2000 + countRow.cnt)}`;
     const now = new Date().toISOString();
 
     db.prepare(`
@@ -99,7 +99,10 @@ participantsRouter.post('/', async (req, res) => {
     if (settings.autoSmsEnabled !== false && settings.autoSmsTemplate) {
       try {
         await sendSmsToRecipients({
-          content: String(settings.autoSmsTemplate),
+          content: formatRegistrationSms(String(settings.autoSmsTemplate), {
+            ticketId,
+            fullName: fullName.trim(),
+          }),
           audience: phone.trim(),
           recipients: [{ id, phone: phone.trim() }],
         });

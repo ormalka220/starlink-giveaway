@@ -108,7 +108,7 @@ const DEFAULT_SETTINGS = {
   primaryColor: '#EE3124',
   autoSmsEnabled: true,
   autoSmsTemplate:
-    'תודה שנרשמת להגרלת Starlink בכנס Fortinet. ההגרלה תתקיים במהלך הכנס. בהצלחה, SpotNet',
+    'תודה שנרשמת להגרלת Starlink בכנס Fortinet. מספר ההרשמה שלך: {ticketId}. ההגרלה תתקיים במהלך הכנס. בהצלחה, SpotNet',
 };
 
 // ---------------------------------------------------------------------------
@@ -158,7 +158,7 @@ export function seedDatabase() {
       const date = new Date(now - (i * 27 + 13) * 60000);
       insertParticipant.run({
         id: `p_${i + 1}`,
-        ticketId: `FT-${String(1000 + i)}`,
+        ticketId: `SPT-${String(1000 + i)}`,
         fullName: `${fn} ${ln}`,
         company,
         role: roles[i % roles.length],
