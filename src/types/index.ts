@@ -17,7 +17,7 @@ export interface Participant {
   phone: string;
   email: string;
   isBusinessCustomer: boolean;
-  interest: InterestArea;
+  interest: InterestArea | string;
   marketingConsent: boolean;
   source: string;
   registeredAt: string;

@@ -42,7 +42,8 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
     const slice = (Math.PI * 2) / list.length;
     ctx.save();
     ctx.translate(r, r);
-    ctx.rotate((angle * Math.PI) / 180);
+    // Slice 0 starts at top (pointer), not at 3 o'clock
+    ctx.rotate((angle * Math.PI) / 180 - Math.PI / 2);
     list.forEach((p, i) => {
       ctx.beginPath();
       ctx.moveTo(0, 0);
@@ -85,9 +86,14 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
 
     const winnerIdx = Math.floor(Math.random() * list.length);
     const slice = 360 / list.length;
-    const target = 360 * 8 + (360 - (winnerIdx * slice + slice / 2));
+    const centerAngle = winnerIdx * slice + slice / 2;
+    const stopAngle = (360 - centerAngle + 360) % 360;
     const start = performance.now();
-    const from = angle % 360;
+    const from = angle;
+    const currentMod = ((from % 360) + 360) % 360;
+    let delta = stopAngle - currentMod;
+    if (delta <= 0) delta += 360;
+    const target = from + 360 * 8 + delta;
     const duration = 6000;
 
     function frame(now: number) {

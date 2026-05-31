@@ -14,7 +14,9 @@ export default function Raffle() {
   const [step, setStep] = useState<1 | 2>(1);
   const [form, setForm] = useState({
     fullName: '', company: '', role: '', phone: '', email: '',
-    interest: 'Forti SASE' as InterestArea, marketingConsent: true,
+    interest: 'Forti SASE' as InterestArea,
+    interestOther: '',
+    marketingConsent: true,
   });
 
   const update = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
@@ -33,12 +35,18 @@ export default function Raffle() {
       push('יש לאשר את התקנון כדי להירשם', 'error');
       return;
     }
+    if (form.interest === 'אחר' && !form.interestOther.trim()) {
+      push('יש לפרט את תחום העניין', 'error');
+      return;
+    }
+    const interest = form.interest === 'אחר' ? form.interestOther.trim() : form.interest;
     setSubmitting(true);
     try {
-      const p = await api.registerParticipant({ ...form, isBusinessCustomer: true, source: 'fortinet_event' });
+      const p = await api.registerParticipant({ ...form, interest, isBusinessCustomer: true, source: 'fortinet_event' });
       navigate('/raffle/success', { state: { ticketId: p.ticketId, name: p.fullName, smsStatus: p.smsStatus } });
-    } catch {
-      push('אירעה שגיאה. נסו שוב.', 'error');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'אירעה שגיאה. נסו שוב.';
+      push(msg, 'error');
       setSubmitting(false);
     }
   }
@@ -177,7 +185,7 @@ export default function Raffle() {
                       type="button"
                       onClick={() => update('interest', i)}
                       className={`px-3 py-3 rounded-xl border text-sm font-medium transition ${
-                        form.interest === i
+                        (i === 'אחר' ? form.interest === 'אחר' : form.interest === i)
                           ? 'border-forti-red bg-forti-red/5 text-forti-ink'
                           : 'border-white/10 bg-transparent text-forti-mute hover:border-white/20'
                       }`}
@@ -186,6 +194,18 @@ export default function Raffle() {
                     </button>
                   ))}
                 </div>
+                {form.interest === 'אחר' && (
+                  <div className="mt-3">
+                    <input
+                      className="input"
+                      value={form.interestOther}
+                      onChange={(e) => update('interestOther', e.target.value)}
+                      placeholder="פרטו את תחום העניין"
+                      maxLength={50}
+                    />
+                    <div className="text-xs text-forti-mute mt-1.5 text-left">{form.interestOther.length} / 50</div>
+                  </div>
+                )}
               </div>
 
               <label className="flex items-start gap-3 cursor-pointer select-none pt-2">

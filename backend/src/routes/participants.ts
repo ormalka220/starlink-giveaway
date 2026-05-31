@@ -50,14 +50,14 @@ participantsRouter.post('/', async (req, res) => {
     if (settings.preventDuplicatePhone) {
       const exists = db.prepare('SELECT id FROM participants WHERE phone = ?').get(phone.trim());
       if (exists) {
-        return res.status(409).json({ error: 'מספר הטלפון כבר רשום להגרלה' });
+        return res.status(409).json({ error: 'לא ניתן להירשם שוב עם אותו מייל/פלאפון' });
       }
     }
 
     if (settings.preventDuplicateEmail) {
       const exists = db.prepare('SELECT id FROM participants WHERE email = ?').get(email.trim().toLowerCase());
       if (exists) {
-        return res.status(409).json({ error: 'כתובת האימייל כבר רשומה להגרלה' });
+        return res.status(409).json({ error: 'לא ניתן להירשם שוב עם אותו מייל/פלאפון' });
       }
     }
 
@@ -88,7 +88,7 @@ participantsRouter.post('/', async (req, res) => {
       phone: phone.trim(),
       email: email.trim().toLowerCase(),
       isBusinessCustomer: isBusinessCustomer ? 1 : 0,
-      interest: interest || 'אחר',
+      interest: String(interest || 'אחר').trim().slice(0, 50),
       marketingConsent: marketingConsent ? 1 : 0,
       source: source || 'web',
       registeredAt: now,
