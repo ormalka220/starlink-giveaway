@@ -67,7 +67,9 @@ async function startBackend(envOverrides = {}) {
     DB_PATH: path.join(tempDir, 'raffle.db'),
     SKIP_SEED: 'true',
     NODE_ENV: 'test',
-    TEXTBELT_API_KEY: 'fake-local-key',
+    SMS4FREE_KEY: 'fake-local-key',
+    SMS4FREE_USER: '0500000000',
+    SMS4FREE_PASS: 'fake-pass',
     SMS_DRY_RUN: 'true',
     ADMIN_EMAIL: testAdminEmail,
     ADMIN_PASSWORD: testAdminPassword,
@@ -158,7 +160,9 @@ test('registration stores an eligible participant and records the automatic SMS'
 test('missing SMS key without dry-run records failure instead of fake success', async (t) => {
   const app = await startBackend({
     NODE_ENV: 'development',
-    TEXTBELT_API_KEY: '',
+    SMS4FREE_KEY: '',
+    SMS4FREE_USER: '',
+    SMS4FREE_PASS: '',
     SMS_DRY_RUN: '',
   });
   t.after(app.stop);

@@ -19,15 +19,24 @@ export type SmsSendResult = {
 const SENT = 'נשלח';
 const FAILED = 'נכשל';
 const PARTIAL = 'נשלח חלקית';
+const SMS4FREE_URL = 'https://api.sms4free.co.il/ApiSMS/v2/SendSMS';
 
 export const WINNER_SMS_TEMPLATE =
   'ברכות! זכית בהגרלת Starlink בכנס Fortinet. נציג שלנו יצור איתך קשר.';
 
-export function normalizePhone(raw: string): string {
+/** Israeli local format for SMS4FREE: 05XXXXXXXX */
+export function normalizePhoneLocal(raw: string): string {
   const digits = raw.replace(/\D/g, '');
-  if (digits.startsWith('972')) return `+${digits}`;
-  if (digits.startsWith('0')) return `+972${digits.slice(1)}`;
-  return `+972${digits}`;
+  if (digits.startsWith('972')) return `0${digits.slice(3)}`;
+  if (digits.startsWith('0')) return digits;
+  if (digits.length === 9) return `0${digits}`;
+  return digits;
+}
+
+export function normalizePhone(raw: string): string {
+  const local = normalizePhoneLocal(raw);
+  if (local.startsWith('0')) return `+972${local.slice(1)}`;
+  return local;
 }
 
 export function resolveRecipients(audience: string): SmsRecipient[] {
@@ -69,94 +78,78 @@ export function resolveRecipients(audience: string): SmsRecipient[] {
   }
 }
 
-type TextbeltDeliveryStatus = 'DELIVERED' | 'SENT' | 'SENDING' | 'FAILED' | 'UNKNOWN';
+type Sms4FreeConfig = {
+  key: string;
+  user: string;
+  pass: string;
+  sender: string;
+};
 
-export async function getDeliveryStatus(textId: string): Promise<TextbeltDeliveryStatus> {
-  try {
-    const res = await fetch(`https://textbelt.com/status/${textId}`);
-    const data = await res.json() as { success?: boolean; status?: TextbeltDeliveryStatus };
-    return data.status ?? 'UNKNOWN';
-  } catch {
-    return 'UNKNOWN';
-  }
+function getSms4FreeConfig(): Sms4FreeConfig | null {
+  const key = process.env.SMS4FREE_KEY?.trim();
+  const user = process.env.SMS4FREE_USER?.trim();
+  const pass = process.env.SMS4FREE_PASS?.trim();
+  if (!key || !user || !pass) return null;
+
+  return {
+    key,
+    user: normalizePhoneLocal(user),
+    pass,
+    sender: (process.env.SMS_SENDER?.trim() || normalizePhoneLocal(user)).slice(0, 11),
+  };
 }
 
-async function pollDeliveryStatus(textId: string): Promise<{ status: TextbeltDeliveryStatus; delivered: boolean }> {
-  const maxAttempts = 6;
-  const delayMs = 2000;
+function sms4FreeError(status: number, message?: string): string {
+  const map: Record<number, string> = {
+    0: 'שגיאה כללית',
+    [-1]: 'מפתח, שם משתמש או סיסמה שגויים',
+    [-2]: 'שם או מספר שולח ההודעה שגוי',
+    [-3]: 'לא נמצאו נמענים',
+    [-4]: 'יתרת הודעות פנויות נמוכה',
+    [-5]: 'הודעה לא מתאימה',
+    [-6]: 'צריך לאמת מספר שולח — שלח הודעה ידנית פעם אחת מאתר SMS4FREE',
+  };
 
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    if (attempt > 0) {
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-    }
-
-    const status = await getDeliveryStatus(textId);
-    console.log(`  <- Textbelt delivery status (attempt ${attempt + 1}): ${status}`);
-
-    if (status === 'DELIVERED' || status === 'SENT') {
-      return { status, delivered: true };
-    }
-    if (status === 'FAILED') {
-      return { status, delivered: false };
-    }
-  }
-
-  return { status: 'UNKNOWN', delivered: false };
+  return map[status] ?? message ?? `SMS4FREE error (${status})`;
 }
 
-const DELIVERY_FAILED_ERROR =
-  'Textbelt accepted the SMS but carrier delivery failed. For Israeli numbers (+972), Textbelt often fails — use a local SMS provider (Twilio/Inforu/019).';
+type Sms4FreeResponse = { status: number; message?: string };
 
-async function sendViaTextbelt(
+async function sendViaSms4Free(
   phone: string,
   message: string,
-  apiKey: string,
-  dryRun: boolean,
-): Promise<{ success: boolean; textId?: string; quotaRemaining?: number; error?: string }> {
-  const key = dryRun ? `${apiKey}_test` : apiKey;
-  const normalized = normalizePhone(phone);
-  const body = new URLSearchParams({ phone: normalized, message, key });
-  const sender = process.env.SMS_SENDER?.trim();
-  if (sender) body.set('sender', sender);
+  config: Sms4FreeConfig,
+): Promise<{ success: boolean; status?: number; error?: string }> {
+  const recipient = normalizePhoneLocal(phone);
+  const payload = {
+    key: config.key,
+    user: config.user,
+    pass: config.pass,
+    sender: config.sender,
+    recipient,
+    msg: message,
+  };
 
-  console.log(`  -> Textbelt: phone=${normalized} test=${dryRun}`);
+  console.log(`  -> SMS4FREE: recipient=${recipient} sender=${config.sender}`);
 
   try {
-    const res = await fetch('https://textbelt.com/text', {
+    const res = await fetch(SMS4FREE_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString(),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
-    const data = await res.json() as { success: boolean; textId?: string; quotaRemaining?: number; error?: string };
-    console.log('  <- Textbelt response:', JSON.stringify(data));
-    return data;
+    const data = await res.json() as Sms4FreeResponse;
+    console.log('  <- SMS4FREE response:', JSON.stringify(data));
+
+    if (data.status > 0) {
+      return { success: true, status: data.status };
+    }
+
+    return { success: false, status: data.status, error: sms4FreeError(data.status, data.message) };
   } catch (err) {
-    console.error('  <- Textbelt fetch error:', err);
+    console.error('  <- SMS4FREE fetch error:', err);
     return { success: false, error: String(err) };
   }
-}
-
-async function sendAndVerifyDelivery(
-  phone: string,
-  content: string,
-  apiKey: string,
-  test: boolean,
-): Promise<{ success: boolean; textId?: string; error?: string }> {
-  const result = await sendViaTextbelt(phone, content, apiKey, test);
-  if (!result.success) return result;
-  if (test || !result.textId) return result;
-
-  const delivery = await pollDeliveryStatus(String(result.textId));
-  if (delivery.delivered) {
-    return { success: true, textId: result.textId };
-  }
-
-  const detail = delivery.status === 'FAILED'
-    ? DELIVERY_FAILED_ERROR
-    : `Delivery status remained ${delivery.status} (textId=${result.textId})`;
-
-  console.error(`  <- SMS not delivered to ${normalizePhone(phone)}: ${detail}`);
-  return { success: false, textId: result.textId, error: detail };
 }
 
 function updateParticipantSmsStatus(recipients: SmsRecipient[], status: string) {
@@ -224,16 +217,16 @@ export async function sendSmsToRecipients({
     return saveSmsMessage(audience, content, 0, FAILED, 0, 0, [], 'No SMS recipients matched the audience');
   }
 
-  const apiKey = process.env.TEXTBELT_API_KEY;
+  const config = getSms4FreeConfig();
   const localDryRun = process.env.SMS_DRY_RUN === 'true';
 
-  if (localDryRun) {
-    console.warn('SMS_DRY_RUN=true - recording SMS without contacting Textbelt');
+  if (localDryRun || test) {
+    console.warn(test ? 'SMS test mode — not contacting SMS4FREE' : 'SMS_DRY_RUN=true — recording SMS without contacting SMS4FREE');
     updateParticipantSmsStatus(recipients, SENT);
     return saveSmsMessage(audience, content, recipients.length, SENT, recipients.length, 0, []);
   }
 
-  if (!apiKey) {
+  if (!config) {
     updateParticipantSmsStatus(recipients, FAILED);
     return saveSmsMessage(
       audience,
@@ -243,64 +236,38 @@ export async function sendSmsToRecipients({
       0,
       recipients.length,
       [],
-      'TEXTBELT_API_KEY is not configured',
+      'SMS4FREE is not configured (SMS4FREE_KEY, SMS4FREE_USER, SMS4FREE_PASS)',
     );
   }
 
-  if (!test) {
-    try {
-      const quotaRes = await fetch(`https://textbelt.com/quota/${apiKey}`);
-      const quotaData = await quotaRes.json() as { success: boolean; quotaRemaining: number };
-      console.log(`Textbelt quota remaining: ${quotaData.quotaRemaining}`);
-      if (quotaData.success && quotaData.quotaRemaining <= 0) {
-        updateParticipantSmsStatus(recipients, FAILED);
-        return saveSmsMessage(
-          audience,
-          content,
-          0,
-          FAILED,
-          0,
-          recipients.length,
-          [],
-          'Textbelt quota is exhausted',
-        );
-      }
-    } catch {
-      // If the quota endpoint is unavailable, try the send endpoint and record its result.
-    }
-  }
-
-  console.log(`Sending SMS to ${recipients.length} recipient(s) [test=${test}]`);
+  console.log(`Sending SMS to ${recipients.length} recipient(s) via SMS4FREE`);
 
   let sent = 0;
   let failed = 0;
   const textIds: string[] = [];
   let lastError: string | undefined;
 
-  const batchSize = 5;
-  for (let i = 0; i < recipients.length; i += batchSize) {
-    const batch = recipients.slice(i, i + batchSize);
-
-    for (const recipient of batch) {
-      const result = await sendAndVerifyDelivery(recipient.phone, content, apiKey, test);
-      if (result.success) {
-        sent++;
-        if (result.textId) textIds.push(result.textId);
-        updateParticipantSmsStatus([recipient], SENT);
-      } else {
-        failed++;
-        lastError = result.error;
-        console.error(`SMS failed to ${recipient.phone}: ${result.error}`);
-        updateParticipantSmsStatus([recipient], FAILED);
-      }
+  for (const recipient of recipients) {
+    const result = await sendViaSms4Free(recipient.phone, content, config);
+    if (result.success) {
+      sent++;
+      if (result.status != null) textIds.push(String(result.status));
+      updateParticipantSmsStatus([recipient], SENT);
+    } else {
+      failed++;
+      lastError = result.error;
+      console.error(`SMS failed to ${recipient.phone}: ${result.error}`);
+      updateParticipantSmsStatus([recipient], FAILED);
     }
 
-    if (i + batchSize < recipients.length) {
-      await new Promise((resolve) => setTimeout(resolve, 200));
-    }
+    await new Promise((resolve) => setTimeout(resolve, 300));
   }
 
   const status = failed === 0 ? SENT : sent === 0 ? FAILED : PARTIAL;
-  console.log(`SMS batch done: ${sent} sent, ${failed} failed | textIds: ${textIds.join(',')}`);
+  console.log(`SMS batch done: ${sent} sent, ${failed} failed`);
   return saveSmsMessage(audience, content, sent, status, sent, failed, textIds, lastError);
+}
+
+export function isSmsConfigured(): boolean {
+  return getSms4FreeConfig() != null;
 }

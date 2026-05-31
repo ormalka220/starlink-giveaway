@@ -16,9 +16,15 @@ services:
         value: admin@spotnet.co.il
       - key: ADMIN_PASSWORD
         sync: false
-      # Textbelt SMS API key – set this in Render dashboard (keep secret!)
-      # - key: TEXTBELT_API_KEY
-      #   value: your_key_here
+      # SMS4FREE – set in Render dashboard (keep secret!)
+      # - key: SMS4FREE_KEY
+      #   sync: false
+      # - key: SMS4FREE_USER
+      #   sync: false
+      # - key: SMS4FREE_PASS
+      #   sync: false
+      # - key: SMS_SENDER
+      #   value: SpotNet
       # Set FRONTEND_URL to your Netlify/Render frontend URL after deploy
       # - key: FRONTEND_URL
       #   value: https://your-app.netlify.app

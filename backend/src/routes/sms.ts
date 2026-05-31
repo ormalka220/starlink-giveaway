@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db';
 import { authenticate } from '../middleware/auth';
-import { sendSmsToAudience, getDeliveryStatus } from '../smsService';
+import { isSmsConfigured, sendSmsToAudience } from '../smsService';
 
 export const smsRouter = Router();
 
@@ -35,21 +35,16 @@ smsRouter.post('/', async (req, res) => {
   return res.status(201).json(result);
 });
 
-smsRouter.get('/status/:textId', async (req, res) => {
-  const status = await getDeliveryStatus(req.params.textId);
-  return res.json({ textId: req.params.textId, status });
-});
-
 // ---------------------------------------------------------------------------
-smsRouter.get('/quota', async (_req, res) => {
-  const apiKey = process.env.TEXTBELT_API_KEY;
-  if (!apiKey) return res.json({ quota: null, message: 'TEXTBELT_API_KEY not configured' });
-
-  try {
-    const r = await fetch(`https://textbelt.com/quota/${apiKey}`);
-    const data = await r.json() as { success: boolean; quotaRemaining: number };
-    return res.json({ quota: data.quotaRemaining });
-  } catch {
-    return res.status(500).json({ error: 'Failed to fetch quota' });
+// GET /api/sms/quota - provider config status
+// ---------------------------------------------------------------------------
+smsRouter.get('/quota', (_req, res) => {
+  if (!isSmsConfigured()) {
+    return res.json({ quota: null, provider: 'sms4free', message: 'SMS4FREE is not configured' });
   }
+  return res.json({
+    quota: null,
+    provider: 'sms4free',
+    message: 'Check remaining SMS balance at sms4free.co.il',
+  });
 });

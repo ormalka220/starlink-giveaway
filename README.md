@@ -78,7 +78,10 @@ JWT_SECRET=replace-with-a-long-random-secret
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=change-me
 FRONTEND_URL=http://localhost:5173
-TEXTBELT_API_KEY=
+SMS4FREE_KEY=
+SMS4FREE_USER=
+SMS4FREE_PASS=
+SMS_SENDER=SpotNet
 SMS_DRY_RUN=true
 SKIP_SEED=true
 DB_PATH=
@@ -90,23 +93,26 @@ Important variables:
 - `ADMIN_EMAIL`: admin login email.
 - `ADMIN_PASSWORD`: admin login password. Store this as a secret in production.
 - `FRONTEND_URL`: deployed frontend origin, for CORS in production.
-- `TEXTBELT_API_KEY`: Textbelt key used to send real SMS messages.
-- `SMS_DRY_RUN`: set to `true` only for local/testing mock SMS. It records SMS without contacting Textbelt.
+- `SMS4FREE_KEY`: API key from sms4free.co.il.
+- `SMS4FREE_USER`: login phone number (e.g. `0549728321`).
+- `SMS4FREE_PASS`: SMS4FREE account password.
+- `SMS_SENDER`: sender name shown to recipients (e.g. `SpotNet`). With free credits only, use your registered phone number.
+- `SMS_DRY_RUN`: set to `true` only for local/testing mock SMS. It records SMS without contacting SMS4FREE.
 - `SKIP_SEED`: set to `true` for a clean database without mock participants.
 - `DB_PATH`: optional SQLite database path, useful for persistent hosting disks.
 
-For production SMS sending, set `TEXTBELT_API_KEY`, leave `SMS_DRY_RUN` unset or
-set it to `false`, and confirm the Textbelt account has quota.
+For production SMS sending, set all `SMS4FREE_*` variables, leave `SMS_DRY_RUN` unset or
+set it to `false`, and verify sender number in the SMS4FREE dashboard.
 
 ## Why SMS Can Fail
 
 SMS sending can fail when:
 
-- `TEXTBELT_API_KEY` is missing or invalid.
-- The Textbelt account has no remaining quota.
-- The phone number is invalid, mistyped, blocked, or unsupported.
-- Textbelt rejects the destination carrier or country.
-- Textbelt or the network is temporarily unavailable.
+- `SMS4FREE_KEY`, `SMS4FREE_USER`, or `SMS4FREE_PASS` is missing or invalid.
+- The SMS4FREE account has no remaining quota.
+- The sender name/number is not verified (error `-6`).
+- The phone number is invalid or mistyped.
+- SMS4FREE or the network is temporarily unavailable.
 - The selected audience resolves to zero recipients.
 - Local testing uses `SMS_DRY_RUN=true`, which intentionally records instead of sending.
 
