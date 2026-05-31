@@ -1,19 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../services/api';
 import { useToast } from '../components/Toast';
-import { BrandMark } from '../components/Brand';
 import type { Participant } from '../types';
 
 const COLORS = ['#EE3124', '#22D3EE', '#22C55E', '#A855F7', '#F59E0B', '#EC4899', '#3B82F6', '#10B981'];
 
-export default function Draw() {
+export default function Draw({ demo = false }: { demo?: boolean }) {
   const { push } = useToast();
   const [eligible, setEligible] = useState<Participant[]>([]);
   const [spinning, setSpinning] = useState(false);
   const [angle, setAngle] = useState(0);
   const [winner, setWinner] = useState<Participant | null>(null);
   const [showWinnerOverlay, setShowWinnerOverlay] = useState(false);
-  const [demo, setDemo] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => { api.eligibleForDraw().then(setEligible); }, []);
@@ -133,14 +131,15 @@ export default function Draw() {
       <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-forti-red/20 rounded-full blur-[140px] animate-pulse-slow" />
       <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] bg-forti-accent/15 rounded-full blur-[140px] animate-pulse-slow" />
 
-      <header className="relative z-10 flex justify-between items-center px-8 py-5">
-        <BrandMark size={36} />
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 chip cursor-pointer">
-            <input type="checkbox" checked={demo} onChange={(e) => setDemo(e.target.checked)} className="accent-forti-red" />
-            <span>מצב Demo</span>
-          </label>
-          <a href="/admin" className="chip">חזרה לאדמין</a>
+      <header className="relative z-10 px-6 md:px-12 py-6 flex items-center">
+        <div className="flex items-center gap-4">
+          <img src="/spotnet-logo.png" alt="SpotNet" className="h-9 md:h-10 object-contain" />
+          <span className="hidden md:inline-block h-7 w-px bg-white/15" />
+          <span className="hidden md:flex items-center gap-2 text-sm tracking-[0.18em] uppercase text-forti-mute">
+            <span className="text-forti-red font-bold">FORTINET</span>
+            <span className="text-forti-mute/60">·</span>
+            <span>Event 2026</span>
+          </span>
         </div>
       </header>
 
