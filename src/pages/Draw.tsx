@@ -4,6 +4,7 @@ import { useToast } from '../components/Toast';
 import { indexAtPointer, targetAngleForIndex } from '../utils/wheelMath';
 import { createDrawSoundEngine, createTickTracker } from '../utils/drawSounds';
 import { launchWinCelebration } from '../utils/winCelebration';
+import EventHeaderBar from '../components/EventHeaderBar';
 import type { Participant } from '../types';
 
 const COLORS = ['#EE3124', '#22D3EE', '#22C55E', '#A855F7', '#F59E0B', '#EC4899', '#3B82F6', '#10B981'];
@@ -177,27 +178,19 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
       <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-forti-red/20 rounded-full blur-[140px] animate-pulse-slow" />
       <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] bg-forti-accent/15 rounded-full blur-[140px] animate-pulse-slow" />
 
-      <header className="relative z-10 px-6 md:px-12 py-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <img src="/spotnet-logo.png" alt="SpotNet" className="h-9 md:h-10 object-contain" />
-          <span className="hidden md:inline-block h-7 w-px bg-white/15" />
-          <span className="hidden md:flex items-center gap-2 text-sm tracking-[0.18em] uppercase text-forti-mute">
-            <span className="inline-flex items-center rounded-md bg-white/95 px-2 py-1">
-              <img src="/Fortinet-Logo.wine.svg" alt="Fortinet" className="h-6 md:h-7 w-auto object-contain" />
-            </span>
-            <span className="text-forti-mute/60">·</span>
-            <span>Event 2026</span>
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={() => setSoundOn((v) => !v)}
-          className="chip text-xs"
-          aria-label={soundOn ? 'השתק סאונד' : 'הפעל סאונד'}
-        >
-          {soundOn ? 'סאונד פעיל' : 'סאונד כבוי'}
-        </button>
-      </header>
+      <EventHeaderBar
+        className="z-10"
+        trailing={
+          <button
+            type="button"
+            onClick={() => setSoundOn((v) => !v)}
+            className="chip text-xs"
+            aria-label={soundOn ? 'השתק סאונד' : 'הפעל סאונד'}
+          >
+            {soundOn ? 'סאונד פעיל' : 'סאונד כבוי'}
+          </button>
+        }
+      />
 
       <main className="relative z-10 px-6 pb-10">
         <div className="text-center mb-6">
