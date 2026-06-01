@@ -16,6 +16,8 @@ export default function ParticipantsPage() {
   const [noSmsOnly, setNoSmsOnly] = useState(false);
   const [selected, setSelected] = useState<Participant | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Participant | null>(null);
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(() => new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
   function refresh() {
     setLoading(true);
@@ -31,6 +33,46 @@ export default function ParticipantsPage() {
       return true;
     });
   }, [items, q, interest, noSmsOnly]);
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every((p) => checkedIds.has(p.id));
+  const someFilteredSelected = filtered.some((p) => checkedIds.has(p.id));
+  const selectedCount = checkedIds.size;
+
+  function toggleRow(id: string) {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAllFiltered() {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (allFilteredSelected) filtered.forEach((p) => next.delete(p.id));
+      else filtered.forEach((p) => next.add(p.id));
+      return next;
+    });
+  }
+
+  function clearSelection() {
+    setCheckedIds(new Set());
+  }
+
+  async function deleteChecked() {
+    const ids = [...checkedIds];
+    if (ids.length === 0) return;
+    try {
+      const { deleted } = await api.deleteParticipants(ids);
+      push(deleted === 1 ? 'משתתף אחד נמחק' : `${deleted} משתתפים נמחקו`);
+      clearSelection();
+      if (selected && ids.includes(selected.id)) setSelected(null);
+      refresh();
+    } catch (err) {
+      push(err instanceof Error ? err.message : 'מחיקה נכשלה', 'error');
+    }
+  }
 
   function exportCsv() {
     const headers = ['Ticket', 'שם', 'חברה', 'תפקיד', 'טלפון', 'אימייל', 'תחום עניין', 'תאריך'];
@@ -52,7 +94,20 @@ export default function ParticipantsPage() {
             <h1 className="text-2xl font-bold">משתתפים</h1>
             <p className="text-sm text-forti-mute">{filtered.length} מתוך {items.length} משתתפים</p>
           </div>
-          <button onClick={exportCsv} className="btn-ghost">ייצוא CSV</button>
+          <div className="flex flex-wrap gap-2">
+            {selectedCount > 0 && (
+              <>
+                <span className="chip text-forti-accent border-forti-accent/40">{selectedCount} נבחרו</span>
+                <button type="button" onClick={() => setConfirmBulkDelete(true)} className="btn-primary text-sm py-2 px-4">
+                  מחק נבחרים
+                </button>
+                <button type="button" onClick={clearSelection} className="btn-ghost text-sm py-2 px-4">
+                  בטל בחירה
+                </button>
+              </>
+            )}
+            <button onClick={exportCsv} className="btn-ghost">ייצוא CSV</button>
+          </div>
         </div>
 
         <div className="glass p-4 grid md:grid-cols-3 gap-3">
@@ -71,6 +126,17 @@ export default function ParticipantsPage() {
             <table className="w-full text-sm">
               <thead className="bg-forti-panel2/60 text-forti-mute text-xs uppercase">
                 <tr>
+                  <th className="w-12 px-3 py-3">
+                    <input
+                      type="checkbox"
+                      className="w-5 h-5 accent-forti-red cursor-pointer"
+                      checked={allFilteredSelected}
+                      ref={(el) => { if (el) el.indeterminate = someFilteredSelected && !allFilteredSelected; }}
+                      onChange={toggleAllFiltered}
+                      aria-label="בחר את כל המשתתפים המוצגים"
+                      disabled={loading || filtered.length === 0}
+                    />
+                  </th>
                   {['#', 'שם', 'חברה', 'תפקיד', 'טלפון', 'אימייל', 'תחום עניין', 'תאריך', 'SMS', 'סטטוס', 'פעולות'].map((h) => (
                     <th key={h} className="text-right px-4 py-3 font-semibold">{h}</th>
                   ))}
@@ -78,13 +144,22 @@ export default function ParticipantsPage() {
               </thead>
               <tbody>
                 {loading && (
-                  <tr><td colSpan={11} className="text-center py-10 text-forti-mute">טוען...</td></tr>
+                  <tr><td colSpan={12} className="text-center py-10 text-forti-mute">טוען...</td></tr>
                 )}
                 {!loading && filtered.length === 0 && (
-                  <tr><td colSpan={11} className="text-center py-10 text-forti-mute">לא נמצאו משתתפים</td></tr>
+                  <tr><td colSpan={12} className="text-center py-10 text-forti-mute">לא נמצאו משתתפים</td></tr>
                 )}
                 {filtered.map((p) => (
-                  <tr key={p.id} className="table-row">
+                  <tr key={p.id} className={`table-row ${checkedIds.has(p.id) ? 'bg-forti-red/5' : ''}`}>
+                    <td className="px-3 py-3">
+                      <input
+                        type="checkbox"
+                        className="w-5 h-5 accent-forti-red cursor-pointer"
+                        checked={checkedIds.has(p.id)}
+                        onChange={() => toggleRow(p.id)}
+                        aria-label={`בחר ${p.fullName}`}
+                      />
+                    </td>
                     <td className="px-4 py-3 font-mono text-forti-accent">{p.ticketId}</td>
                     <td className="px-4 py-3 font-medium">{p.fullName}</td>
                     <td className="px-4 py-3">{p.company}</td>
@@ -147,11 +222,29 @@ export default function ParticipantsPage() {
       )}
 
       <ConfirmModal
+        open={confirmBulkDelete}
+        onClose={() => setConfirmBulkDelete(false)}
+        onConfirm={() => { void deleteChecked(); }}
+        title="מחיקת משתתפים"
+        message={`האם למחוק ${selectedCount} משתתפים? לא ניתן לבטל פעולה זו.`}
+        confirmLabel="מחק הכל"
+        danger
+      />
+
+      <ConfirmModal
         open={!!confirmDelete}
         onClose={() => setConfirmDelete(null)}
         onConfirm={() => {
           if (!confirmDelete) return;
-          api.deleteParticipant(confirmDelete.id).then(() => { push('המשתתף נמחק'); refresh(); });
+          api.deleteParticipant(confirmDelete.id).then(() => {
+            push('המשתתף נמחק');
+            setCheckedIds((prev) => {
+              const next = new Set(prev);
+              next.delete(confirmDelete.id);
+              return next;
+            });
+            refresh();
+          });
         }}
         title="מחיקת משתתף"
         message={`האם למחוק את ${confirmDelete?.fullName}? לא ניתן לבטל פעולה זו.`}

@@ -79,6 +79,10 @@ export const api = {
     return request('DELETE', `/participants/${id}`);
   },
 
+  async deleteParticipants(ids: string[]): Promise<{ deleted: number }> {
+    return request('POST', '/participants/bulk-delete', { ids });
+  },
+
   async markInvalid(id: string): Promise<void> {
     return request('PATCH', `/participants/${id}/invalid`);
   },

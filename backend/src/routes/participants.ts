@@ -123,10 +123,42 @@ participantsRouter.post('/', async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// POST /api/participants/bulk-delete  (admin only)
+// ---------------------------------------------------------------------------
+participantsRouter.post('/bulk-delete', authenticate, (req, res) => {
+  const { ids } = req.body as { ids?: unknown };
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: 'לא נבחרו משתתפים למחיקה' });
+  }
+
+  const unique = [...new Set(ids.filter((id): id is string => typeof id === 'string' && id.length > 0))];
+  if (unique.length === 0) {
+    return res.status(400).json({ error: 'לא נבחרו משתתפים למחיקה' });
+  }
+
+  const deleteWinners = db.prepare('DELETE FROM winners WHERE participantId = ?');
+  const deleteParticipant = db.prepare('DELETE FROM participants WHERE id = ?');
+
+  const run = db.transaction((participantIds: string[]) => {
+    let deleted = 0;
+    for (const id of participantIds) {
+      deleteWinners.run(id);
+      const result = deleteParticipant.run(id);
+      if (result.changes > 0) deleted += 1;
+    }
+    return deleted;
+  });
+
+  const deleted = run(unique);
+  return res.json({ ok: true, deleted });
+});
+
+// ---------------------------------------------------------------------------
 // DELETE /api/participants/:id  (admin only)
 // ---------------------------------------------------------------------------
 participantsRouter.delete('/:id', authenticate, (req, res) => {
   const { id } = req.params;
+  db.prepare('DELETE FROM winners WHERE participantId = ?').run(id);
   const result = db.prepare('DELETE FROM participants WHERE id = ?').run(id);
   if (result.changes === 0) {
     return res.status(404).json({ error: 'משתתף לא נמצא' });
