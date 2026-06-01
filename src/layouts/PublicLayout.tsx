@@ -9,7 +9,9 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
           <img src="/spotnet-logo.png" alt="SpotNet" className="h-9 md:h-10 object-contain" />
           <span className="hidden md:inline-block h-7 w-px bg-white/15" />
           <span className="hidden md:flex items-center gap-2 text-sm tracking-[0.18em] uppercase text-forti-mute">
-            <span className="text-forti-red font-bold">FORTINET</span>
+            <span className="inline-flex items-center rounded-md bg-white/95 px-2 py-1">
+              <img src="/Fortinet-Logo.wine.svg" alt="Fortinet" className="h-6 md:h-7 w-auto object-contain" />
+            </span>
             <span className="text-forti-mute/60">·</span>
             <span>Event 2026</span>
           </span>

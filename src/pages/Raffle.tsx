@@ -39,10 +39,20 @@ export default function Raffle() {
       push('יש לפרט את תחום העניין', 'error');
       return;
     }
-    const interest = form.interest === 'אחר' ? form.interestOther.trim() : form.interest;
     setSubmitting(true);
     try {
-      const p = await api.registerParticipant({ ...form, interest, isBusinessCustomer: true, source: 'fortinet_event' });
+      const p = await api.registerParticipant({
+        fullName: form.fullName,
+        company: form.company,
+        role: form.role,
+        phone: form.phone,
+        email: form.email,
+        interest: form.interest,
+        interestOther: form.interest === 'אחר' ? form.interestOther.trim() : '',
+        marketingConsent: form.marketingConsent,
+        isBusinessCustomer: true,
+        source: 'fortinet_event',
+      });
       navigate('/raffle/success', { state: { ticketId: p.ticketId, name: p.fullName, smsStatus: p.smsStatus } });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'אירעה שגיאה. נסו שוב.';

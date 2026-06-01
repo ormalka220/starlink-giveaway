@@ -23,6 +23,18 @@ export const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
+function ensureParticipantsColumns() {
+  const cols = db.prepare('PRAGMA table_info(participants)').all() as { name: string }[];
+  if (!cols.some((c) => c.name === 'interestOther')) {
+    db.exec("ALTER TABLE participants ADD COLUMN interestOther TEXT NOT NULL DEFAULT ''");
+  }
+  db.prepare(`
+    UPDATE participants
+    SET interestOther = interest, interest = 'אחר'
+    WHERE interest NOT IN ('Forti SASE', 'Perception Point', 'Starlink', 'פתרונות סייבר', 'אחר')
+  `).run();
+}
+
 // ---------------------------------------------------------------------------
 // Schema
 // ---------------------------------------------------------------------------
@@ -37,6 +49,7 @@ db.exec(`
     email         TEXT NOT NULL,
     isBusinessCustomer INTEGER NOT NULL DEFAULT 0,
     interest      TEXT NOT NULL DEFAULT '',
+    interestOther TEXT NOT NULL DEFAULT '',
     marketingConsent   INTEGER NOT NULL DEFAULT 0,
     source        TEXT NOT NULL DEFAULT 'web',
     registeredAt  TEXT NOT NULL,
@@ -73,6 +86,8 @@ db.exec(`
     value TEXT NOT NULL
   );
 `);
+
+ensureParticipantsColumns();
 
 // ---------------------------------------------------------------------------
 // Helpers – convert SQLite booleans

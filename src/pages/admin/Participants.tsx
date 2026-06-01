@@ -4,6 +4,7 @@ import { api } from '../../services/api';
 import { useToast } from '../../components/Toast';
 import { ConfirmModal } from '../../components/Modal';
 import type { Participant, InterestArea } from '../../types';
+import { getInterestDisplay, interestDisplayText, matchesInterestFilter } from '../../utils/interestDisplay';
 
 const interests: (InterestArea | 'הכל')[] = ['הכל', 'Forti SASE', 'Perception Point', 'Starlink', 'פתרונות סייבר', 'אחר'];
 
@@ -28,7 +29,7 @@ export default function ParticipantsPage() {
   const filtered = useMemo(() => {
     return items.filter((p) => {
       if (q && ![p.fullName, p.company, p.phone, p.email].some((s) => s.toLowerCase().includes(q.toLowerCase()))) return false;
-      if (interest !== 'הכל' && p.interest !== interest) return false;
+      if (!matchesInterestFilter(p, interest)) return false;
       if (noSmsOnly && p.smsStatus === 'נשלח') return false;
       return true;
     });
@@ -76,7 +77,7 @@ export default function ParticipantsPage() {
 
   function exportCsv() {
     const headers = ['Ticket', 'שם', 'חברה', 'תפקיד', 'טלפון', 'אימייל', 'תחום עניין', 'תאריך'];
-    const rows = filtered.map((p) => [p.ticketId, p.fullName, p.company, p.role, p.phone, p.email, p.interest, new Date(p.registeredAt).toLocaleString('he-IL')]);
+    const rows = filtered.map((p) => [p.ticketId, p.fullName, p.company, p.role, p.phone, p.email, interestDisplayText(p), new Date(p.registeredAt).toLocaleString('he-IL')]);
     const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -166,7 +167,9 @@ export default function ParticipantsPage() {
                     <td className="px-4 py-3 text-forti-mute">{p.role}</td>
                     <td className="px-4 py-3 font-mono text-xs">{p.phone}</td>
                     <td className="px-4 py-3 text-xs text-forti-mute">{p.email}</td>
-                    <td className="px-4 py-3"><span className="chip">{p.interest}</span></td>
+                    <td className="px-4 py-3">
+                      <InterestCell participant={p} />
+                    </td>
                     <td className="px-4 py-3 text-forti-mute text-xs">{new Date(p.registeredAt).toLocaleString('he-IL')}</td>
                     <td className="px-4 py-3"><span className={`chip ${p.smsStatus === 'נשלח' ? 'text-forti-green border-forti-green/40' : p.smsStatus === 'נכשל' ? 'text-forti-red border-forti-red/40' : ''}`}>{p.smsStatus}</span></td>
                     <td className="px-4 py-3"><span className={`chip ${p.raffleStatus === 'זכה' ? 'text-forti-red border-forti-red/40' : p.raffleStatus === 'לא תקין' ? 'text-forti-mute' : 'text-forti-accent border-forti-accent/40'}`}>{p.raffleStatus}</span></td>
@@ -200,7 +203,7 @@ export default function ParticipantsPage() {
             <div className="space-y-3 text-sm">
               <Row label="טלפון" value={selected.phone} />
               <Row label="אימייל" value={selected.email} />
-              <Row label="תחום עניין" value={selected.interest} />
+              <Row label="תחום עניין" value={interestDisplayText(selected)} />
               <Row label="אישור דיוור" value={selected.marketingConsent ? 'כן' : 'לא'} />
               <Row label="תאריך הרשמה" value={new Date(selected.registeredAt).toLocaleString('he-IL')} />
               <Row label="סטטוס SMS" value={selected.smsStatus} />
@@ -252,6 +255,16 @@ export default function ParticipantsPage() {
         danger
       />
     </AdminLayout>
+  );
+}
+
+function InterestCell({ participant }: { participant: Participant }) {
+  const { primary, detail } = getInterestDisplay(participant);
+  return (
+    <div className="flex flex-col items-start gap-1 max-w-[14rem]">
+      <span className="chip">{primary}</span>
+      {detail && <span className="text-xs text-forti-ink leading-snug">{detail}</span>}
+    </div>
   );
 }
 

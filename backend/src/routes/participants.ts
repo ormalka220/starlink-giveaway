@@ -27,7 +27,7 @@ participantsRouter.get('/eligible', authenticate, (_req, res) => {
 // ---------------------------------------------------------------------------
 participantsRouter.post('/', async (req, res) => {
   try {
-    const { fullName, company, role, phone, email, isBusinessCustomer, interest, marketingConsent, source } = req.body as {
+    const { fullName, company, role, phone, email, isBusinessCustomer, interest, interestOther, marketingConsent, source } = req.body as {
       fullName?: string;
       company?: string;
       role?: string;
@@ -35,6 +35,7 @@ participantsRouter.post('/', async (req, res) => {
       email?: string;
       isBusinessCustomer?: boolean;
       interest?: string;
+      interestOther?: string;
       marketingConsent?: boolean;
       source?: string;
     };
@@ -72,13 +73,19 @@ participantsRouter.post('/', async (req, res) => {
     const ticketId = `SPT-${String(2000 + countRow.cnt)}`;
     const now = new Date().toISOString();
 
+    const interestVal = String(interest || 'אחר').trim();
+    const interestOtherVal = interestVal === 'אחר' ? String(interestOther || '').trim().slice(0, 50) : '';
+    if (interestVal === 'אחר' && !interestOtherVal) {
+      return res.status(400).json({ error: 'יש לפרט את תחום העניין' });
+    }
+
     db.prepare(`
       INSERT INTO participants
         (id, ticketId, fullName, company, role, phone, email,
-         isBusinessCustomer, interest, marketingConsent, source, registeredAt, smsStatus, raffleStatus)
+         isBusinessCustomer, interest, interestOther, marketingConsent, source, registeredAt, smsStatus, raffleStatus)
       VALUES
         (@id, @ticketId, @fullName, @company, @role, @phone, @email,
-         @isBusinessCustomer, @interest, @marketingConsent, @source, @registeredAt, @smsStatus, @raffleStatus)
+         @isBusinessCustomer, @interest, @interestOther, @marketingConsent, @source, @registeredAt, @smsStatus, @raffleStatus)
     `).run({
       id,
       ticketId,
@@ -88,7 +95,8 @@ participantsRouter.post('/', async (req, res) => {
       phone: phone.trim(),
       email: email.trim().toLowerCase(),
       isBusinessCustomer: isBusinessCustomer ? 1 : 0,
-      interest: String(interest || 'אחר').trim().slice(0, 50),
+      interest: interestVal.slice(0, 50),
+      interestOther: interestOtherVal,
       marketingConsent: marketingConsent ? 1 : 0,
       source: source || 'web',
       registeredAt: now,
