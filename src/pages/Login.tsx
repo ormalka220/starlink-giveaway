@@ -26,16 +26,28 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-full grid place-items-center px-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-grid-cyber [background-size:48px_48px] opacity-30" />
+    <div className="min-h-full grid place-items-center px-4 py-16 relative overflow-hidden">
+      <div className="ambient-orange" style={{ top: '-200px', left: '50%', transform: 'translateX(-50%)' }} />
       <div className="relative w-full max-w-md animate-fade-in">
-        <div className="flex justify-center mb-6"><BrandMark size={40} /></div>
-        <form onSubmit={onSubmit} className="glass p-8">
-          <h1 className="text-2xl font-bold mb-1">התחברות</h1>
-          <p className="text-forti-mute text-sm mb-6">כניסה לפאנל הניהול</p>
+        <div className="flex justify-center mb-8"><BrandMark size={44} /></div>
+        <form onSubmit={onSubmit} className="glass p-8 md:p-10">
+          <h1
+            className="text-3xl font-semibold mb-1 headline-gradient-h"
+            style={{ letterSpacing: '-0.02em' }}
+          >
+            התחברות
+          </h1>
+          <p className="text-sm mb-7" style={{ color: 'rgba(255,255,255,0.55)' }}>כניסה לפאנל הניהול</p>
 
           {error && (
-            <div className="mb-4 p-3 rounded bg-forti-red/20 border border-forti-red/40 text-forti-red text-sm">
+            <div
+              className="mb-4 p-3 rounded-xl text-sm"
+              style={{
+                background: 'rgba(239,68,68,0.10)',
+                border: '1px solid rgba(239,68,68,0.35)',
+                color: '#FCA5A5',
+              }}
+            >
               {error}
             </div>
           )}
@@ -66,11 +78,13 @@ export default function Login() {
 
           <button
             disabled={loading}
-            className="btn-primary w-full mt-6 py-3 disabled:opacity-60"
+            className="btn-primary w-full mt-7"
           >
             {loading ? 'מתחבר...' : 'התחברות'}
           </button>
-          <p className="mt-4 text-xs text-forti-mute text-center">גישה למורשים בלבד · SpotNet</p>
+          <p className="mt-5 text-xs text-center" style={{ color: 'rgba(255,255,255,0.45)' }}>
+            גישה למורשים בלבד · SpotNet
+          </p>
         </form>
       </div>
     </div>

@@ -5,9 +5,10 @@ import { indexAtPointer, targetAngleForIndex } from '../utils/wheelMath';
 import { createDrawSoundEngine, createTickTracker } from '../utils/drawSounds';
 import { launchWinCelebration } from '../utils/winCelebration';
 import EventHeaderBar from '../components/EventHeaderBar';
+import StarsBackground from '../components/StarsBackground';
 import type { Participant } from '../types';
 
-const COLORS = ['#EE3124', '#22D3EE', '#22C55E', '#A855F7', '#F59E0B', '#EC4899', '#3B82F6', '#10B981'];
+const COLORS = ['#F97C1D', '#FFA04D', '#D4600A', '#22C55E', '#A855F7', '#EC4899', '#3B82F6', '#FFC882'];
 
 export default function Draw({ demo = false }: { demo?: boolean }) {
   const { push } = useToast();
@@ -54,9 +55,9 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
     const r = size / 2;
     ctx.clearRect(0, 0, size, size);
     if (participants.length === 0) {
-      ctx.fillStyle = '#161D30';
+      ctx.fillStyle = '#10141F';
       ctx.beginPath(); ctx.arc(r, r, r - 4, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#8A93AD'; ctx.font = '24px Heebo'; ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '24px Heebo'; ctx.textAlign = 'center';
       ctx.fillText('אין משתתפים', r, r);
       return;
     }
@@ -74,7 +75,7 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
       grad.addColorStop(1, COLORS[i % COLORS.length] + '55');
       ctx.fillStyle = grad;
       ctx.fill();
-      ctx.strokeStyle = '#0A0E1A';
+      ctx.strokeStyle = '#020204';
       ctx.lineWidth = 2;
       ctx.stroke();
 
@@ -91,9 +92,9 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
 
     ctx.beginPath();
     ctx.arc(r, r, 40, 0, Math.PI * 2);
-    ctx.fillStyle = '#0A0E1A';
+    ctx.fillStyle = '#020204';
     ctx.fill();
-    ctx.strokeStyle = '#EE3124';
+    ctx.strokeStyle = '#F97C1D';
     ctx.lineWidth = 3;
     ctx.stroke();
   }, []);
@@ -174,9 +175,21 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      <div className="absolute inset-0 bg-grid-cyber [background-size:64px_64px] opacity-25" />
-      <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-forti-red/20 rounded-full blur-[140px] animate-pulse-slow" />
-      <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] bg-forti-accent/15 rounded-full blur-[140px] animate-pulse-slow" />
+      <StarsBackground />
+      <div
+        className="absolute -top-40 -right-40 w-[700px] h-[700px] rounded-full pointer-events-none animate-pulse-slow"
+        style={{
+          background: 'radial-gradient(circle, rgba(249,124,29,0.12) 0%, transparent 60%)',
+          filter: 'blur(60px)',
+        }}
+      />
+      <div
+        className="absolute -bottom-40 -left-40 w-[700px] h-[700px] rounded-full pointer-events-none animate-pulse-slow"
+        style={{
+          background: 'radial-gradient(circle, rgba(255,200,130,0.08) 0%, transparent 60%)',
+          filter: 'blur(60px)',
+        }}
+      />
 
       <EventHeaderBar
         className="z-10"
@@ -192,36 +205,59 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
         }
       />
 
-      <main className="relative z-10 px-6 pb-10">
-        <div className="text-center mb-6">
-          <h1 className="text-5xl md:text-7xl font-black tracking-tight flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
-            הגרלת <img src="/starlink-logo.png" alt="Starlink" className="h-10 md:h-14 w-auto object-contain drop-shadow-[0_0_24px_rgba(255,255,255,0.12)]" />
+      <main className="relative z-10 px-4 sm:px-6 pb-10 pt-6 sm:pt-8">
+        <div className="text-center mb-6 sm:mb-8">
+          <h1
+            className="text-4xl sm:text-5xl md:text-7xl font-semibold flex flex-wrap items-center justify-center gap-x-6 sm:gap-x-8 md:gap-x-10 gap-y-2"
+            style={{ letterSpacing: '-0.03em' }}
+          >
+            <span className="headline-gradient">הגרלת</span>
+            <img src="/starlink-logo.png" alt="Starlink" className="h-8 sm:h-10 md:h-14 w-auto object-contain drop-shadow-[0_0_24px_rgba(249,124,29,0.30)]" />
           </h1>
-          <p className="text-forti-mute text-lg mt-2">Fortinet Event · by SpotNet</p>
-          <div className="mt-4 inline-flex items-center gap-2 chip text-forti-accent border-forti-accent/40">
-            <span className="w-2 h-2 rounded-full bg-forti-accent animate-pulse" />
+          <div className="mt-4 sm:mt-5 inline-flex items-center gap-2 chip chip-orange">
+            <span className="w-2 h-2 rounded-full bg-spotnet-orange animate-pulse" />
             <span>{list.length} משתתפים פעילים</span>
           </div>
         </div>
 
         <div className="flex flex-col items-center">
-          <div className="relative">
-            <div className="absolute -inset-8 rounded-full bg-gradient-to-tr from-forti-red/30 via-forti-accent/20 to-transparent blur-2xl" />
+          <div className="relative w-full max-w-[620px]">
+            <div
+              className="absolute -inset-10 rounded-full"
+              style={{
+                background: 'radial-gradient(circle, rgba(249,124,29,0.30) 0%, transparent 60%)',
+                filter: 'blur(40px)',
+              }}
+            />
             <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-20">
               <svg width="40" height="56" viewBox="0 0 40 56">
                 <defs>
                   <linearGradient id="pointer" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0" stopColor="#EE3124" />
-                    <stop offset="1" stopColor="#9b1f17" />
+                    <stop offset="0" stopColor="#FFA04D" />
+                    <stop offset="1" stopColor="#D4600A" />
                   </linearGradient>
                 </defs>
                 <path d="M20 50 L4 8 L36 8 Z" fill="url(#pointer)" stroke="#fff" strokeWidth="2" />
               </svg>
             </div>
-            <canvas ref={canvasRef} width={620} height={620} className={`relative rounded-full shadow-glow border-4 border-forti-line ${spinning ? 'animate-pulse' : ''}`} />
+            <canvas
+              ref={canvasRef}
+              width={620}
+              height={620}
+              className={`relative rounded-full w-full h-auto ${spinning ? 'animate-pulse' : ''}`}
+              style={{
+                border: '4px solid rgba(249,124,29,0.25)',
+                boxShadow: '0 0 60px rgba(249,124,29,0.20), 0 0 0 1px rgba(249,124,29,0.30) inset',
+                maxWidth: '100%',
+              }}
+            />
           </div>
 
-          <button onClick={spin} disabled={spinning || list.length === 0} className="mt-10 btn-primary text-2xl px-12 py-5 disabled:opacity-50 disabled:cursor-not-allowed shadow-glow">
+          <button
+            onClick={spin}
+            disabled={spinning || list.length === 0}
+            className="mt-8 sm:mt-10 btn-primary text-lg sm:text-xl px-8 sm:px-12 py-4 sm:py-5 disabled:cursor-not-allowed w-full sm:w-auto"
+          >
             {spinning ? 'מסובב...' : 'התחל הגרלה'}
           </button>
         </div>
@@ -229,14 +265,33 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
 
       {showWinnerOverlay && winner && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-6 animate-fade-in">
-          <div className="glass max-w-2xl w-full p-10 text-center animate-scale-in shadow-glow border-2 border-forti-red">
-            <div className="text-forti-accent uppercase tracking-[0.3em] text-xs mb-3">The Winner Is</div>
-            <h2 className="text-6xl md:text-7xl font-black text-forti-red drop-shadow-[0_0_40px_rgba(238,49,36,0.6)] mb-4">{winner.fullName}</h2>
-            <div className="text-2xl text-forti-ink">{winner.company}</div>
-            <div className="mt-3 font-mono text-forti-accent text-lg">{winner.ticketId}</div>
+          <div
+            className="glass max-w-2xl w-full p-10 text-center animate-scale-in"
+            style={{
+              border: '2px solid rgba(249,124,29,0.45)',
+              boxShadow: '0 0 80px rgba(249,124,29,0.35), 0 20px 60px rgba(0,0,0,0.6)',
+            }}
+          >
+            <div
+              className="uppercase text-xs mb-3"
+              style={{ color: 'rgba(255,255,255,0.55)', letterSpacing: '0.3em' }}
+            >
+              The Winner Is
+            </div>
+            <h2
+              className="text-6xl md:text-7xl font-semibold mb-4 headline-gradient-h"
+              style={{
+                letterSpacing: '-0.02em',
+                filter: 'drop-shadow(0 0 40px rgba(249,124,29,0.45))',
+              }}
+            >
+              {winner.fullName}
+            </h2>
+            <div className="text-2xl text-white">{winner.company}</div>
+            <div className="mt-3 font-mono text-spotnet-orangeLight text-lg">{winner.ticketId}</div>
 
             <div className="mt-8 flex flex-wrap gap-3 justify-center">
-              <button onClick={confirmWinner} className="btn-primary text-lg px-6 py-3">אשר זכייה</button>
+              <button onClick={confirmWinner} className="btn-primary text-base">אשר זכייה</button>
               <button onClick={sendSmsToWinner} className="btn-accent">שלח SMS לזוכה</button>
               <button onClick={() => { closeWinnerOverlay(); setWinner(null); spin(); }} className="btn-ghost">הגרל מחדש</button>
               <button onClick={closeWinnerOverlay} className="btn-ghost">סגור</button>

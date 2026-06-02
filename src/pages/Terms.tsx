@@ -16,8 +16,8 @@ const SECTIONS = [
 
 function Clause({ n, children }: { n: string; children: ReactNode }) {
   return (
-    <div className="flex gap-3 text-[0.95rem] leading-7 text-forti-mute">
-      <span className="shrink-0 font-mono text-xs font-bold text-forti-accent pt-1">{n}</span>
+    <div className="flex gap-3 text-[0.95rem] leading-7" style={{ color: 'rgba(255,255,255,0.65)' }}>
+      <span className="shrink-0 font-mono text-xs font-semibold text-spotnet-orangeLight pt-1">{n}</span>
       <p className="flex-1">{children}</p>
     </div>
   );
@@ -27,8 +27,8 @@ function BulletList({ items }: { items: string[] }) {
   return (
     <ul className="mr-8 space-y-2">
       {items.map((item) => (
-        <li key={item} className="flex gap-2.5 text-[0.95rem] leading-7 text-forti-mute">
-          <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-forti-red/80" />
+        <li key={item} className="flex gap-2.5 text-[0.95rem] leading-7" style={{ color: 'rgba(255,255,255,0.65)' }}>
+          <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-spotnet-orange" />
           <span>{item}</span>
         </li>
       ))}
@@ -48,14 +48,28 @@ function TermsSection({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-28 glass-2 p-6 md:p-8 relative overflow-hidden group hover:border-white/10 transition-colors">
-      <span className="pointer-events-none absolute -left-2 -top-4 text-7xl font-black text-white/[0.03] select-none">{n}</span>
+    <section
+      id={id}
+      className="scroll-mt-28 relative overflow-hidden group rounded-2xl p-6 md:p-8 backdrop-blur-sm transition-all duration-500"
+      style={{
+        background: 'rgba(0,0,0,0.40)',
+        border: '1px solid rgba(255,255,255,0.06)',
+      }}
+    >
+      <span className="pointer-events-none absolute -left-2 -top-4 text-7xl font-black select-none" style={{ color: 'rgba(249,124,29,0.05)' }}>{n}</span>
       <div className="relative">
         <div className="flex items-center gap-3 mb-5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-forti-red/15 border border-forti-red/30 text-sm font-bold text-forti-red">
+          <span
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-semibold text-white"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255,160,77,0.18), rgba(249,124,29,0.10))',
+              border: '1px solid rgba(249,124,29,0.35)',
+              boxShadow: '0 0 18px rgba(249,124,29,0.15)',
+            }}
+          >
             {n}
           </span>
-          <h2 className="text-xl font-bold text-forti-ink">{title}</h2>
+          <h2 className="text-xl font-semibold text-white">{title}</h2>
         </div>
         <div className="space-y-4">{children}</div>
       </div>
@@ -67,41 +81,50 @@ export default function Terms() {
   return (
     <PublicLayout>
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-grid-cyber [background-size:64px_64px] opacity-15 pointer-events-none" />
-        <div className="absolute -top-32 right-0 w-[480px] h-[480px] bg-forti-red/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-forti-accent/8 rounded-full blur-[100px] pointer-events-none" />
+        <div className="ambient-orange" style={{ top: '-200px', right: '-200px' }} />
+        <div
+          className="absolute bottom-0 left-0 w-[600px] h-[600px] rounded-full pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle, rgba(249,124,29,0.05) 0%, transparent 60%)',
+            filter: 'blur(60px)',
+          }}
+        />
 
         <div className="relative px-6 md:px-12 py-12 md:py-16 max-w-6xl mx-auto animate-fade-in">
           <header className="mb-12 md:mb-14">
-            <div className="flex items-center gap-3 text-xs uppercase tracking-[0.22em] text-forti-mute mb-5">
-              <span className="h-px w-10 bg-forti-red" />
-              <span className="text-forti-red font-semibold">Forti Security Day · 03.06.2026</span>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-forti-ink max-w-3xl leading-tight">
-              תקנון השתתפות בהגרלת{' '}
-              <span className="text-orange-400">Starlink Standard Kit</span>
+            <span className="trust-badge mb-5">
+              <span className="w-1.5 h-1.5 rounded-full bg-spotnet-orange animate-pulse" />
+              Forti Security Day · 03.06.2026
+            </span>
+            <h1
+              className="text-4xl md:text-6xl font-semibold max-w-3xl leading-[1.1]"
+              style={{ letterSpacing: '-0.025em' }}
+            >
+              <span className="headline-gradient">תקנון השתתפות בהגרלת</span>{' '}
+              <span className="headline-gradient">Starlink Standard Kit</span>
             </h1>
-            <p className="mt-4 text-forti-mute text-lg max-w-2xl leading-relaxed">
-              מארגנת ההגרלה: ספוטנט בע&quot;מ · ההשתתפות מהווה הסכמה מלאה לתנאים המפורטים להלן.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-2">
-              <span className="chip text-forti-accent border-forti-accent/30">הגרלה חד-פעמית</span>
-              <span className="chip">פרס: חומרה בלבד</span>
-              <span className="chip">דין ישראלי</span>
-            </div>
           </header>
 
           <div className="grid lg:grid-cols-[220px_minmax(0,1fr)] gap-8 lg:gap-10 items-start">
             <nav className="lg:sticky lg:top-8 glass p-4 md:p-5 hidden lg:block">
-              <div className="text-xs uppercase tracking-wider text-forti-mute font-semibold mb-3">תוכן עניינים</div>
+              <div className="label mb-3">תוכן עניינים</div>
               <ol className="space-y-1">
                 {SECTIONS.map(({ id, n, title }) => (
                   <li key={id}>
                     <a
                       href={`#${id}`}
-                      className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-forti-mute hover:text-forti-ink hover:bg-white/[0.04] transition"
+                      className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm transition"
+                      style={{ color: 'rgba(255,255,255,0.60)' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = '#fff';
+                        e.currentTarget.style.background = 'rgba(249,124,29,0.06)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = 'rgba(255,255,255,0.60)';
+                        e.currentTarget.style.background = 'transparent';
+                      }}
                     >
-                      <span className="font-mono text-[10px] text-forti-accent">{n}</span>
+                      <span className="font-mono text-[10px] text-spotnet-orangeLight">{n}</span>
                       <span>{title}</span>
                     </a>
                   </li>
@@ -134,10 +157,17 @@ export default function Terms() {
               </TermsSection>
 
               <TermsSection id="prize" n="4" title="הפרס">
-                <div className="rounded-xl border border-forti-accent/25 bg-forti-accent/5 px-5 py-4 mb-2">
-                  <div className="text-xs uppercase tracking-wider text-forti-accent font-semibold mb-1">הפרס</div>
-                  <div className="text-lg font-bold text-forti-ink">ערכת Starlink Standard Kit</div>
-                  <div className="text-sm text-forti-mute mt-1">חומרה בלבד · Hardware only</div>
+                <div
+                  className="rounded-2xl px-5 py-4 mb-2"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(249,124,29,0.10), rgba(249,124,29,0.03))',
+                    border: '1px solid rgba(249,124,29,0.30)',
+                    boxShadow: '0 0 30px rgba(249,124,29,0.10)',
+                  }}
+                >
+                  <div className="label mb-1 text-spotnet-orangeLight">הפרס</div>
+                  <div className="text-lg font-semibold text-white">ערכת Starlink Standard Kit</div>
+                  <div className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.60)' }}>חומרה בלבד · Hardware only</div>
                 </div>
                 <Clause n="4.1">במסגרת ההגרלה ייבחר זוכה אחד אשר יהיה זכאי לקבל את הפרס המפורט לעיל.</Clause>
                 <Clause n="4.2">הפרס כולל את ציוד הקצה (Hardware) בלבד ואינו כולל:</Clause>
@@ -165,7 +195,7 @@ export default function Terms() {
               <TermsSection id="publicity" n="7" title="פרסום הזוכה">
                 <Clause n="7.1">המשתתף מסכים כי במקרה של זכייה, תהיה ספוטנט רשאית לפרסם את:</Clause>
                 <BulletList items={['שמו המלא', 'שם החברה בה הוא מועסק', 'תמונתו (ככל שתצולם במהלך הכנס)']} />
-                <p className="text-[0.95rem] leading-7 text-forti-mute mr-8">
+                <p className="text-[0.95rem] leading-7 mr-8" style={{ color: 'rgba(255,255,255,0.65)' }}>
                   לצורך פרסום תוצאות ההגרלה, יחסי ציבור, שיווק ופרסום של פעילות החברה, ללא תמורה נוספת.
                 </p>
               </TermsSection>
@@ -181,26 +211,40 @@ export default function Terms() {
                 <Clause n="9.2">סמכות השיפוט הבלעדית בכל מחלוקת הנוגעת להגרלה תהיה נתונה לבתי המשפט המוסמכים במחוז מרכז.</Clause>
               </TermsSection>
 
-              <div className="glass p-6 md:p-8 border-forti-red/20">
+              <div
+                className="rounded-2xl p-6 md:p-8 backdrop-blur-sm"
+                style={{
+                  background: 'rgba(0,0,0,0.40)',
+                  border: '1px solid rgba(249,124,29,0.25)',
+                  boxShadow: '0 0 30px rgba(249,124,29,0.08)',
+                }}
+              >
                 <div className="flex items-start gap-4">
-                  <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-forti-red/15 border border-forti-red/30">
-                    <svg viewBox="0 0 24 24" className="h-5 w-5 text-forti-red" fill="none" stroke="currentColor" strokeWidth="2">
+                  <div
+                    className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(255,160,77,0.20), rgba(249,124,29,0.08))',
+                      border: '1px solid rgba(249,124,29,0.40)',
+                      boxShadow: '0 0 18px rgba(249,124,29,0.15)',
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" className="h-5 w-5 text-spotnet-orangeLight" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
                       <rect x="3" y="4" width="18" height="16" rx="2" />
                     </svg>
                   </div>
                   <div className="space-y-3">
-                    <h3 className="text-lg font-bold text-forti-ink">אישור משתתף</h3>
-                    <p className="text-sm leading-relaxed text-forti-mute">
+                    <h3 className="text-lg font-semibold text-white">אישור משתתף</h3>
+                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.65)' }}>
                       אני מאשר/ת כי קראתי את התקנון, הבנתי את תנאיו ואני מסכים/ה להם במלואם.
                     </p>
                     <div className="space-y-2">
-                      <div className="flex items-center gap-3 text-sm text-forti-mute">
-                        <span className="h-4 w-4 rounded border border-white/20 bg-white/[0.03]" />
+                      <div className="flex items-center gap-3 text-sm" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                        <span className="h-4 w-4 rounded" style={{ border: '1px solid rgba(255,255,255,0.20)', background: 'rgba(255,255,255,0.03)' }} />
                         <span>מאשר/ת את תנאי התקנון</span>
                       </div>
-                      <div className="flex items-center gap-3 text-sm text-forti-mute">
-                        <span className="h-4 w-4 rounded border border-white/20 bg-white/[0.03]" />
+                      <div className="flex items-center gap-3 text-sm" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                        <span className="h-4 w-4 rounded" style={{ border: '1px solid rgba(255,255,255,0.20)', background: 'rgba(255,255,255,0.03)' }} />
                         <span>מאשר/ת קבלת דיוור מקצועי, שיווקי והודעות SMS מספוטנט בע&quot;מ</span>
                       </div>
                     </div>
