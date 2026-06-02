@@ -24,6 +24,7 @@ export default function App() {
         <Route path="/raffle" element={<Raffle />} />
         <Route path="/raffle/success" element={<RaffleSuccess />} />
         <Route path="/terms" element={<Terms />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/draw/demo" element={<Draw demo />} />
         <Route path="/draw" element={<Draw />} />
         <Route path="/admin" element={<RequireAuth><Dashboard /></RequireAuth>} />
