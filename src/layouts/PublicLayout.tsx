@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import EventHeaderBar from '../components/EventHeaderBar';
+import { RAFFLE_TERMS_URL } from '../constants/raffleTerms';
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
@@ -17,7 +18,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
         <div className="max-w-7xl mx-auto px-6 md:px-12 flex flex-wrap items-center justify-between gap-3 text-xs text-forti-mute">
           <div>© {new Date().getFullYear()} SpotNet · בשיתוף Fortinet</div>
           <div className="flex gap-5">
-            <a href="#" className="hover:text-forti-ink transition">תקנון ההגרלה</a>
+            <a href={RAFFLE_TERMS_URL} target="_blank" rel="noopener noreferrer" className="hover:text-forti-ink transition">תקנון ההגרלה</a>
             <a href="#" className="hover:text-forti-ink transition">פרטיות</a>
             <a href="#" className="hover:text-forti-ink transition">יצירת קשר</a>
           </div>
