@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import PublicLayout from '../layouts/PublicLayout';
 import { api } from '../services/api';
 import { useToast } from '../components/Toast';
+import { RAFFLE_TERMS_PATH } from '../constants/raffleTerms';
 import type { InterestArea } from '../types';
 
 const interests: InterestArea[] = ['Forti SASE', 'Perception Point', 'Starlink', 'פתרונות סייבר', 'אחר'];
@@ -221,7 +222,10 @@ export default function Raffle() {
               <label className="flex items-start gap-3 cursor-pointer select-none pt-2">
                 <input type="checkbox" checked={form.marketingConsent} onChange={(e) => update('marketingConsent', e.target.checked)} className="mt-1 w-5 h-5 accent-forti-red" />
                 <span className="text-sm text-forti-mute leading-relaxed">
-                  אני מאשר/ת קבלת עדכונים והודעות בנוגע להגרלה ולפתרונות SpotNet
+                  אני מאשר/ת קבלת עדכונים והודעות בנוגע להגרלה ולפתרונות SpotNet.{' '}
+                  <Link to={RAFFLE_TERMS_PATH} className="text-forti-accent hover:underline">
+                    תקנון ההגרלה
+                  </Link>
                 </span>
               </label>
 

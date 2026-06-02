@@ -9,6 +9,7 @@ import Messages from './pages/admin/Messages';
 import Winners from './pages/admin/Winners';
 import Settings from './pages/admin/Settings';
 import Draw from './pages/Draw';
+import Terms from './pages/Terms';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   if (!localStorage.getItem('auth')) return <Navigate to="/login" replace />;
@@ -22,7 +23,7 @@ export default function App() {
         <Route path="/" element={<Navigate to="/raffle" replace />} />
         <Route path="/raffle" element={<Raffle />} />
         <Route path="/raffle/success" element={<RaffleSuccess />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/terms" element={<Terms />} />
         <Route path="/draw/demo" element={<Draw demo />} />
         <Route path="/draw" element={<Draw />} />
         <Route path="/admin" element={<RequireAuth><Dashboard /></RequireAuth>} />
