@@ -79,7 +79,7 @@ export default function Terms() {
             </div>
             <h1 className="text-4xl md:text-5xl font-black tracking-tight text-forti-ink max-w-3xl leading-tight">
               תקנון השתתפות בהגרלת{' '}
-              <span className="text-forti-accent">Starlink Standard Kit</span>
+              <span className="text-orange-400">Starlink Standard Kit</span>
             </h1>
             <p className="mt-4 text-forti-mute text-lg max-w-2xl leading-relaxed">
               מארגנת ההגרלה: ספוטנט בע&quot;מ · ההשתתפות מהווה הסכמה מלאה לתנאים המפורטים להלן.
