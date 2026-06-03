@@ -42,7 +42,7 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
     if (demo) {
       return Array.from({ length: 8 }, (_, i) => ({ id: `d_${i}`, ticketId: `SPT-${1000 + i}`, fullName: `Demo ${i + 1}`, company: 'DemoCo' } as Participant));
     }
-    return eligible.slice(0, 50);
+    return eligible;
   }, [demo, eligible]);
 
   listRef.current = list;
@@ -61,7 +61,9 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
       ctx.fillText('אין משתתפים', r, r);
       return;
     }
-    const slice = (Math.PI * 2) / participants.length;
+    const count = participants.length;
+    const fontSize = count > 60 ? 9 : count > 40 ? 10 : count > 20 ? 12 : 14;
+    const slice = (Math.PI * 2) / count;
     ctx.save();
     ctx.translate(r, r);
     ctx.rotate((currentAngle * Math.PI) / 180 - Math.PI / 2);
@@ -83,9 +85,10 @@ export default function Draw({ demo = false }: { demo?: boolean }) {
       ctx.rotate(i * slice + slice / 2);
       ctx.textAlign = 'right';
       ctx.fillStyle = '#fff';
-      ctx.font = '600 14px Heebo';
-      const label = `${p.ticketId} · ${p.fullName}`;
-      ctx.fillText(label.length > 24 ? label.slice(0, 23) + '…' : label, r - 20, 5);
+      ctx.font = `600 ${fontSize}px Heebo`;
+      const label = count > 50 ? p.ticketId : `${p.ticketId} · ${p.fullName}`;
+      const maxLen = count > 50 ? 10 : 24;
+      ctx.fillText(label.length > maxLen ? label.slice(0, maxLen - 1) + '…' : label, r - 20, 5);
       ctx.restore();
     });
     ctx.restore();
